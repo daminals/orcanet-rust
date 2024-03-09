@@ -1,13 +1,5 @@
-target/*
+target
 
 *.pb.go
 
 .DS_Store
-
-
-**/.DS_Store
-target
-peernode/files/*
-!peernode/files/.gitkeep
-peernode/download/*
-!peernode/download/.gitkeep
