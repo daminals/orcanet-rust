@@ -165,7 +165,6 @@ async fn test_malicious_spam() {
     }
 }
 
-
 #[tokio::test]
 async fn test_mismatched_id() {
     let dht_client = create_test_client().await;
