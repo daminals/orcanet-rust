@@ -138,13 +138,14 @@ impl Server {
     }
 
     pub async fn server(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let ip = "127.0.0.1";
+        let ip = "0.0.0.0";
         let addr = format!("{}:{}", ip, self.port).parse()?;
 
         let market_state = MarketState {
             market_data: self.market_data.clone(),
         };
 
+        println!("Market server listening on {}", addr);
         tonic::transport::Server::builder()
             .add_service(MarketServer::new(market_state))
             .serve(addr)
