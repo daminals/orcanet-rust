@@ -32,10 +32,16 @@ FROM debian:buster-slim
 
 # Install SSL
 RUN apt-get update && apt-get install -y \
-    libssl1.1
+    libssl1.1 \
+    openssl
 
 # Copy the binary from the build image
 COPY --from=build /market/orcanet-market-ferrous .
 
+# Generate a private key
+RUN openssl genrsa -out private.pem 2048
+RUN openssl pkcs8 -in private.pem -inform PEM -topk8 -out private.pk8 -outform DER -nocrypt
+RUN rm private.pem
+
 # Run the binary
-CMD ./orcanet-market-ferrous
+CMD ./orcanet-market-ferrous --private-key private.pk8 --listen-address /ip4/0.0.0.0/tcp/6881
