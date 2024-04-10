@@ -8,7 +8,7 @@ default-run = "orcanet-market-ferrous"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
-lib-proto = { path = "../lib-proto" }
+lib-proto = { path = "lib-proto" }
 libp2p = { version = "0.53.2", features = ["kad", "tokio", "tcp", "mdns", "noise", "yamux", "macros", "dns", "rsa"] }
 prost = "0.12.3"
 serde = { version = "1.0.197", features = ["derive"] }

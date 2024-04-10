@@ -18,7 +18,7 @@ WORKDIR /market
 # Copy in files
 COPY market/Cargo.toml .
 COPY market/Cargo.lock .
-COPY market/build.rs .
+COPY market/lib-proto lib-proto
 COPY market/src src
 
 # Build the project with caching
