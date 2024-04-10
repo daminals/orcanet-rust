@@ -1,5 +1,10 @@
-target
-
 *.pb.go
+**/.DS_Store
+target
+peernode/files/*
+!peernode/files/.gitkeep
+peernode/download/*
+!peernode/download/.gitkeep
 
-.DS_Store
+market/private.pem
+market/private.pk8
