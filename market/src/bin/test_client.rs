@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let cmd = args.get(0).unwrap_or(&"");
         let file_hash = args.get(1).unwrap_or(&"");
-        
+
         match *cmd {
             "register" => {
                 if file_hash.is_empty() {
