@@ -28,7 +28,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     scan.read_line(&mut user).unwrap();
     let user = user.trim();
 
-    println!();
     print!("Enter a price: ");
     let _ = stdout().flush();
     let mut price = String::new();
@@ -43,51 +42,54 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         price: price.into(),
     };
     println!();
-
+    println!("Enter 'help' to see the available commands");
     loop {
         let mut s = String::new();
-        println!("--------------");
-        println!("1. Register file");
-        println!("2. Check holders");
-        println!("3. Exit");
-
-        print!("Enter your choice: ");
+        print!("> ");
 
         let _ = stdout().flush();
         scan.read_line(&mut s).unwrap();
 
-        let choice: u32 = s.trim().parse().unwrap();
+        let args = s.trim().split_whitespace().collect::<Vec<_>>();
 
-        if choice == 3 {
-            break;
+        if args.is_empty() {
+            continue;
         }
 
-        let mut file_hash = String::new();
-        print!("Enter file hash: ");
-        let _ = stdout().flush();
-        scan.read_line(&mut file_hash).unwrap();
-        let file_hash = file_hash.trim();
-
-        match choice {
-            1 => match register_file(&mut client, file_hash, &user).await {
-                Ok(_) => println!("File registered"),
-                Err(status) => println!("Failed to register with error {}", status),
-            },
-            2 => match check_holders(&mut client, file_hash).await {
-                Ok(response) => {
-                    println!("Holders:");
-                    for holder in &response.holders {
-                        println!("User {} is charging {}", holder.name, holder.price);
-                    }
+        let cmd = args.get(0).unwrap_or(&"");
+        let file_hash = args.get(1).unwrap_or(&"");
+        
+        match *cmd {
+            "register" => {
+                if file_hash.is_empty() {
+                    println!("Error: File hash was empty");
+                    continue;
                 }
-                Err(status) => println!("Failed to check holders with error {}", status),
-            },
+                register_file(&mut client, file_hash, &user).await?;
+                println!("File successfully registered");
+            }
+            "check" => {
+                if file_hash.is_empty() {
+                    println!("Error: File hash was empty");
+                    continue;
+                }
+                let response = check_holders(&mut client, file_hash).await?;
+                println!("Holders: {:?}", response.holders);
+            }
+            "help" => {
+                println!("Commands:");
+                println!("register <file_hash> - register a file");
+                println!("check <file_hash> - check holders of a file");
+                println!("help - show this message");
+                println!("exit - exit the program");
+            }
+            "exit" => {
+                break;
+            }
             _ => {
-                println!("Invalid choice");
+                println!("Unknown command: {}", cmd);
             }
         }
-
-        println!();
     }
 
     Ok(())
