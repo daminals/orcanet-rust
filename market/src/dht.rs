@@ -34,7 +34,8 @@ struct Behaviour {
 /// the map at the same time later
 
 fn update_entry<T>(swarm: &mut Swarm<Behaviour>, record: Record)
-    where T: DhtEntry + Default
+where
+    T: DhtEntry + Default,
 {
     let key_str = std::str::from_utf8(record.key.as_ref()).unwrap();
     let value_str = std::str::from_utf8(&record.value).unwrap();
@@ -47,17 +48,12 @@ fn update_entry<T>(swarm: &mut Swarm<Behaviour>, record: Record)
         Some(cur) => serde_json::from_str(std::str::from_utf8(&cur.value).unwrap()).unwrap(),
         None => T::default(),
     };
-    let new_values: T =
-        serde_json::from_str(std::str::from_utf8(&record.value).unwrap()).unwrap();
-    
+    let new_values: T = serde_json::from_str(std::str::from_utf8(&record.value).unwrap()).unwrap();
+
     let key_extract = key_str.split_once('/').unwrap().1.as_bytes();
 
-    let merged_serialized = serde_json::to_string(&T::update(
-        key_extract,
-        cur_values,
-        new_values,
-    ))
-    .unwrap();
+    let merged_serialized =
+        serde_json::to_string(&T::update(key_extract, cur_values, new_values)).unwrap();
 
     let new_record = Record::new(record.key, merged_serialized.into_bytes());
 
@@ -406,7 +402,10 @@ impl DhtClient {
         }
     }
 
-    pub async fn get<T: DhtEntry + DeserializeOwned>(&self, key: &str) -> Result<Option<T>, Status> {
+    pub async fn get<T: DhtEntry + DeserializeOwned>(
+        &self,
+        key: &str,
+    ) -> Result<Option<T>, Status> {
         let (tx, rx) = oneshot::channel();
         self.tx_kad
             .send(Command::Get {
@@ -420,11 +419,7 @@ impl DhtClient {
         Ok(res.map(|res| serde_json::from_str(&res).unwrap()))
     }
 
-    pub async fn set<T: DhtEntry>(
-        &self,
-        key: &str,
-        value: T,
-    ) -> Result<(), Status> {
+    pub async fn set<T: DhtEntry>(&self, key: &str, value: T) -> Result<(), Status> {
         let serialized = serde_json::to_string(&value).map_err(|err| {
             eprintln!("{err}");
             Status::internal("Failed to serialize requests")
@@ -443,7 +438,7 @@ impl DhtClient {
 
         rx.await.unwrap()
     }
-    
+
     pub async fn get_requests(&self, file_hash: &str) -> Result<Option<Vec<FileRequest>>, Status> {
         self.get::<Vec<FileRequest>>(file_hash).await
     }
