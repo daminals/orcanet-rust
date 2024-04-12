@@ -1,7 +1,7 @@
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{get_current_time, EXPIRATION_OFFSET};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::FileRequest;
 
@@ -57,5 +57,18 @@ impl DhtEntry for Vec<FileRequest> {
         }
 
         merged_ids.into_values().collect()
+    }
+}
+
+// set of all file hashes being provided
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ProvidedFiles(pub HashSet<String>);
+
+impl DhtEntry for ProvidedFiles {
+    fn key_namespace() -> &'static str {
+        "ProvidedFiles"
+    }
+    fn update(_key: &[u8], cur: ProvidedFiles, new_values: ProvidedFiles) -> ProvidedFiles {
+        ProvidedFiles(&cur.0 | &new_values.0)
     }
 }
