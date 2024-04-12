@@ -1,6 +1,6 @@
 use lib_proto::User;
 use orcanet_market_ferrous::dht::DhtClient;
-use orcanet_market_ferrous::{dht, get_current_time, FileRequest, EXPIRATION_OFFSET};
+use orcanet_market_ferrous::{dht, get_current_time, FileRequest};
 use rand::{distributions::Alphanumeric, Rng};
 
 fn random_string(len: usize) -> String {
