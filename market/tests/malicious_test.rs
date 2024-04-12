@@ -13,10 +13,12 @@ fn random_string(len: usize) -> String {
     s
 }
 
+// start a dht node to bootstrap to before running test
+// e.g. `BOOTSTRAP_PEER=/ip4/127.0.0.1/tcp/6881/p2p/{peer_id} cargo test`
+
 async fn create_test_client() -> dht::DhtClient {
-    let str = "/ip4/130.245.173.204/tcp/6885/p2p/QmXQ2cfTwrNVAqepupQQYdsyrHsscR2TWkghWxYUjNLmKU"
-        .to_string();
-    let bootstrap_peers = vec![str.parse().unwrap()];
+    let peer = std::env::var("BOOTSTRAP_PEER").unwrap();
+    let bootstrap_peers = vec![peer.parse().unwrap()];
 
     let listen_on = None;
 
