@@ -1,15 +1,21 @@
+use serde::{de::DeserializeOwned, Serialize};
+
 use crate::{get_current_time, EXPIRATION_OFFSET};
 use std::collections::HashMap;
 
 use crate::FileRequest;
 
-pub trait DhtEntry<V> {
+pub trait DhtEntry: Serialize + DeserializeOwned {
+    fn key_namespace() -> &'static str;
     // combine old record and new record
     // perform validation here
-    fn update(key: &[u8], cur: V, new: V) -> V;
+    fn update(key: &[u8], cur: Self, new: Self) -> Self;
 }
 
-impl DhtEntry<Vec<FileRequest>> for Vec<FileRequest> {
+impl DhtEntry for Vec<FileRequest> {
+    fn key_namespace() -> &'static str {
+        "Vec<FileRequest>"
+    }
     fn update(key: &[u8], cur: Vec<FileRequest>, new_values: Vec<FileRequest>) -> Vec<FileRequest> {
         let key_str = std::str::from_utf8(key).unwrap();
         /*
