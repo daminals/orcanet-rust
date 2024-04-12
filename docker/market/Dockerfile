@@ -23,8 +23,8 @@ COPY market/src src
 
 # Build the project with caching
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-	--mount=type=cache,target=/market/target \
-	cargo build --release && \
+    --mount=type=cache,target=/market/target \
+    cargo build --release && \
     cp ./target/release/orcanet-market-ferrous ./orcanet-market-ferrous
 
 # Runner image

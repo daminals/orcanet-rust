@@ -30,22 +30,28 @@ Detailed gRPC endpoints are in `proto/market.proto`
   - Returns a list of Users that hold the file.
 
 ## Running with Docker
-We provide a Docker compose file to easily run the producer and market server together. To run it:
+
+We provide a Docker compose file to easily run the producer and market server
+together. To run it:
+
 ```bash
-docker-compose build
-docker-compose up
+docker compose build
+docker compose up
 ```
-This will automatically mount the local `peernode/files` directory to the producer container and expose the producer HTTP and market server gRPC ports.
+This will automatically mount the local `peernode/files` directory to the
+producer container and expose the producer HTTP and market server gRPC ports.
 
 ## Running Without Docker
 
 ### Peer Node
+
 ```bash
 cd peernode
 cargo run -- -p  [ --ip <IP - USE 127.0.0.1 FOR LOCAL TESTING> ]
 ```
 
 To run the consumer:
+
 ```bash
 cd peernode
 cargo run -- -f <FILE_HASH>
@@ -108,6 +114,7 @@ cargo run --bin dht_client -- --private-key private.pk8 # by default, /ip4/0.0.0
 ```
 
 #### Run a test client
+
 ```Shell
 cargo run --bin test_client
 ```
