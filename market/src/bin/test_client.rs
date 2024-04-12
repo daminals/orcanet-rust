@@ -50,13 +50,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let _ = stdout().flush();
         scan.read_line(&mut s).unwrap();
 
-        let args = s.trim().split_whitespace().collect::<Vec<_>>();
+        let args = s.split_whitespace().collect::<Vec<_>>();
 
         if args.is_empty() {
             continue;
         }
 
-        let cmd = args.get(0).unwrap_or(&"");
+        let cmd = args.first().unwrap_or(&"");
         let file_hash = args.get(1).unwrap_or(&"");
 
         match *cmd {

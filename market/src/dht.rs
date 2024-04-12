@@ -1,7 +1,7 @@
+use crate::dht_entry::DhtEntry;
 use crate::*;
 
-use std::borrow::Cow;
-use std::collections::{hash_map, HashMap, HashSet};
+use std::collections::{hash_map, HashMap};
 use std::error::Error;
 use std::time::Duration;
 
@@ -17,6 +17,7 @@ use libp2p::{
 };
 use libp2p::{Multiaddr, PeerId, Swarm};
 
+use serde::de::DeserializeOwned;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
@@ -29,83 +30,40 @@ struct Behaviour {
     mdns: mdns::tokio::Behaviour,
 }
 
-// verifies that the request is ok
-fn valid_request(cur: Option<Cow<'_, Record>>, record: &Record) -> bool {
-    let key_str = std::str::from_utf8(record.key.as_ref()).unwrap();
-
-    /*
-    // check that the key is a valid sha256 hash (right now, leave it out to make testing with the test_client easier)
-    if key_str.len() != 64 {
-        return false;
-    }
-    */
-
-    let cur_values = match cur {
-        Some(cur) => serde_json::from_str(&std::str::from_utf8(&cur.value).unwrap()).unwrap(),
-        None => vec![] as Vec<FileRequest>,
-    };
-
-    let new_values: Vec<FileRequest> =
-        serde_json::from_str(&std::str::from_utf8(&record.value).unwrap()).unwrap();
-
-    let existing_ids: HashMap<String, FileRequest> = cur_values
-        .iter()
-        .map(|x| (x.user.id.clone(), x.clone()))
-        .collect();
-
-    let mut seen_ids: HashSet<String> = HashSet::new();
-    let now = get_current_time();
-
-    for new in new_values {
-        // check that the expiration date is valid
-        if new.expiration < now || new.expiration > now + EXPIRATION_OFFSET {
-            println!("Invalid expiration");
-            return false;
-        }
-
-        if key_str != new.file_hash {
-            println!("File hash does not match key");
-            return false;
-        }
-
-        if existing_ids.contains_key(&new.user.id) {
-            let existing = existing_ids.get(&new.user.id).unwrap();
-
-            // check that there isn't duplicate ids
-            if seen_ids.contains(&new.user.id) {
-                println!("Duplicate id");
-                return false;
-            }
-
-            // check that the new expiration date is not before the old one
-            // a newer one is ok, within the offset already checked above
-            if new.expiration < existing.expiration {
-                println!("New expiration is before the current one");
-                return false;
-            }
-
-            seen_ids.insert(new.user.id.clone());
-        }
-    }
-
-    // look for any ids that were missing from the new request
-    for id in existing_ids.keys() {
-        if !seen_ids.contains(id) {
-            let existing = existing_ids.get(id).unwrap();
-
-            // if this has not expired yet, but it is missing from the new request thats an error
-            if now < existing.expiration {
-                println!("Missing unexpired value");
-                return false;
-            }
-        }
-    }
-
-    true
-}
-
 /// Think about concurrency issues with multiple users accessing and modifying
 /// the map at the same time later
+
+fn update_entry<T>(swarm: &mut Swarm<Behaviour>, record: Record)
+    where T: DeserializeOwned + Serialize + DhtEntry<T> + Default
+{
+    let key_str = std::str::from_utf8(record.key.as_ref()).unwrap();
+    let value_str = std::str::from_utf8(&record.value).unwrap();
+
+    println!("Received record {key_str:?} {value_str:?}");
+
+    let cur = swarm.behaviour_mut().kademlia.store_mut().get(&record.key);
+
+    let cur_values: T = match cur {
+        Some(cur) => serde_json::from_str(std::str::from_utf8(&cur.value).unwrap()).unwrap(),
+        None => T::default(),
+    };
+    let new_values: T =
+        serde_json::from_str(std::str::from_utf8(&record.value).unwrap()).unwrap();
+    
+    let key_extract = key_str.split_once('/').unwrap().1.as_bytes();
+
+    let merged_serialized = serde_json::to_string(&T::update(
+        key_extract,
+        cur_values,
+        new_values,
+    ))
+    .unwrap();
+
+    let new_record = Record::new(record.key, merged_serialized.into_bytes());
+
+    let res = swarm.behaviour_mut().kademlia.store_mut().put(new_record);
+    println!("{res:?}");
+}
 
 // runs a kad node
 async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Command>) {
@@ -167,29 +125,15 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                 }
             }
             SwarmEvent::Behaviour(BehaviourEvent::Kademlia(kad::Event::InboundRequest { request })) => {
-                match request {
-                    kad::InboundRequest::PutRecord { record, .. } => {
-                        if let Some(record) = record {
-                            let key_str = std::str::from_utf8(record.key.as_ref()).unwrap();
-                            let value_str = std::str::from_utf8(&record.value).unwrap();
-
-                            println!(
-                                "Received record {:?} {:?}",
-                                key_str,
-                                value_str,
-                            );
-
-                            let cur = swarm.behaviour_mut().kademlia.store_mut().get(&record.key);
-
-                            if valid_request(cur, &record) {
-                                let res = swarm.behaviour_mut().kademlia.store_mut().put(record);
-                                println!("{res:?}");
-                            } else {
-                                println!("Malicious request");
-                            }
+                if let kad::InboundRequest::PutRecord { record: Some(record), .. } = request {
+                    let mut sp = record.key.as_ref().splitn(2, |&b| b == b'/');
+                    let namespace = sp.next().unwrap();
+                    match namespace {
+                        b"Vec<FileRequest>" => {
+                            update_entry::<Vec<FileRequest>>(&mut swarm, record);
                         }
+                        _ => eprintln!("Unknown key namespace {:?}", std::str::from_utf8(namespace)),
                     }
-                    _ => {}
                 }
             },
             SwarmEvent::Behaviour(BehaviourEvent::Kademlia(kad::Event::OutboundQueryProgressed { result, .. })) => {
@@ -490,7 +434,7 @@ impl DhtClient {
 
         self.tx_kad
             .send(Command::Set {
-                key: file_hash.to_owned(),
+                key: String::from("Vec<FileRequest>/") + file_hash,
                 val: serialized,
                 resp: tx,
             })
