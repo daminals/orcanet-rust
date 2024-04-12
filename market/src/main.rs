@@ -42,8 +42,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut bytes = std::fs::read(private_key).expect("Failed to read private key bytes");
         let id_keys = Keypair::rsa_from_pkcs8(&mut bytes).expect("Failed to decode private key");
         println!("Peer Id: {}", id_keys.public().to_peer_id());
-        let mut peer_id_file = std::fs::File::create("peer_id.txt").expect("Failed to create peer id file");
-        peer_id_file.write_all(&id_keys.public().to_peer_id().to_bytes()).expect("Failed to write peer id to file");
+        let mut peer_id_file =
+            std::fs::File::create("peer_id.txt").expect("Failed to create peer id file");
+        peer_id_file
+            .write_all(&id_keys.public().to_peer_id().to_bytes())
+            .expect("Failed to write peer id to file");
         Some(id_keys)
     } else {
         None
