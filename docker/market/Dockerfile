@@ -44,4 +44,15 @@ RUN openssl pkcs8 -in private.pem -inform PEM -topk8 -out private.pk8 -outform D
 RUN rm private.pem
 
 # Run the binary
-CMD ./orcanet-market-ferrous --private-key private.pk8 --listen-address /ip4/0.0.0.0/tcp/6881
+ARG BOOTSTRAP
+CMD if [ -z "$BOOTSTRAP" ]; then \
+        echo "Bootstrap not provided, starting new network"; \
+        ./orcanet-market-ferrous \
+            --private-key private.pk8 \
+            --listen-address /ip4/0.0.0.0/tcp/6881; \
+    else \
+        ./orcanet-market-ferrous \
+            --private-key private.pk8 \
+            --listen-address /ip4/0.0.0.0/tcp/6881 \
+            --bootstrap-peers "$BOOTSTRAP"; \
+    fi
