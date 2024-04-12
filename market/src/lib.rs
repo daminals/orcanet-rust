@@ -1,4 +1,5 @@
 pub mod dht;
+pub mod dht_entry;
 pub mod market;
 
 use lib_proto::*;
