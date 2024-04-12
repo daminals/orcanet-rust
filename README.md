@@ -38,8 +38,20 @@ together. To run it:
 docker compose build
 docker compose up
 ```
+
 This will automatically mount the local `peernode/files` directory to the
 producer container and expose the producer HTTP and market server gRPC ports.
+
+The market server requires another Kademlia node to be connected to it in order
+to store data. In order to bootstrap to another node, pass an address to docker
+compose, either by the `.env` file, or on the command line.
+
+```bash
+BOOTSTRAP="/ip4/{addr}/tcp/6881/p2p/{peer_id} docker compose up --build
+```
+
+Otherwise, the market server will launch a new network, which requires at least
+one other node to connect before it is able to store data.
 
 ## Running Without Docker
 
