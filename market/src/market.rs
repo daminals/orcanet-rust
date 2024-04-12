@@ -19,7 +19,7 @@ impl MarketData {
     }
     async fn insert_and_validate(&self, file_request: FileRequest) {
         let hash = file_request.file_hash.clone();
-        let Ok(files) = self.kad_wrapper.get_requests(&hash).await else {
+        let Ok(files) = self.kad_wrapper.get::<Vec<FileRequest>>(&hash).await else {
             eprintln!("Failed to fetch file requests from Kad");
             return;
         };
@@ -29,7 +29,7 @@ impl MarketData {
             holder.expiration >= current_time && holder.user.id != file_request.user.id
         });
         files.push(file_request);
-        match self.kad_wrapper.set_requests(&hash, files).await {
+        match self.kad_wrapper.set::<Vec<FileRequest>>(&hash, files).await {
             Ok(_) => {}
             Err(_) => eprintln!("Failed to update file requests in Kad"),
         }
@@ -78,7 +78,7 @@ impl Market for MarketState {
         let mut holders = self
             .market_data
             .kad_wrapper
-            .get_requests(file_hash.as_str())
+            .get::<Vec<FileRequest>>(file_hash.as_str())
             .await?
             .unwrap_or(vec![]);
 
@@ -112,7 +112,7 @@ impl Market for MarketState {
         if let Err(err) = self
             .market_data
             .kad_wrapper
-            .set_requests(file_hash.as_str(), holders)
+            .set::<Vec<FileRequest>>(file_hash.as_str(), holders)
             .await
         {
             eprintln!("Error: {:?}", err);

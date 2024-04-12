@@ -34,7 +34,7 @@ struct Behaviour {
 /// the map at the same time later
 
 fn update_entry<T>(swarm: &mut Swarm<Behaviour>, record: Record)
-    where T: DeserializeOwned + Serialize + DhtEntry<T> + Default
+    where T: DhtEntry + Default
 {
     let key_str = std::str::from_utf8(record.key.as_ref()).unwrap();
     let value_str = std::str::from_utf8(&record.value).unwrap();
@@ -75,7 +75,7 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
         select! {
         // receive message and put into waiting map for response
         recv_msg = rx_kad.recv() => match recv_msg {
-            Some(Command::GetRequests{key, resp}) => {
+            Some(Command::Get{key, resp}) => {
                 swarm.behaviour_mut().kademlia.get_record(kad::RecordKey::new(&key));
                 (*pending_get.entry(key).or_default()).push(resp);
             },
@@ -128,11 +128,10 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                 if let kad::InboundRequest::PutRecord { record: Some(record), .. } = request {
                     let mut sp = record.key.as_ref().splitn(2, |&b| b == b'/');
                     let namespace = sp.next().unwrap();
-                    match namespace {
-                        b"Vec<FileRequest>" => {
-                            update_entry::<Vec<FileRequest>>(&mut swarm, record);
-                        }
-                        _ => eprintln!("Unknown key namespace {:?}", std::str::from_utf8(namespace)),
+                    if namespace == Vec::<FileRequest>::key_namespace().as_bytes() {
+                        update_entry::<Vec<FileRequest>>(&mut swarm, record);
+                    } else {
+                        eprintln!("Unknown key namespace {:?}", std::str::from_utf8(namespace));
                     }
                 }
             },
@@ -254,10 +253,9 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
 
 #[derive(Debug)]
 pub enum Command {
-    // file name -> Vec<FileRequest>
-    GetRequests {
+    Get {
         key: String,
-        resp: oneshot::Sender<Result<Option<Vec<FileRequest>>, Status>>,
+        resp: oneshot::Sender<Result<Option<String>, Status>>,
     },
     Set {
         key: String,
@@ -408,24 +406,26 @@ impl DhtClient {
         }
     }
 
-    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<Vec<FileRequest>>, Status> {
+    pub async fn get<T: DhtEntry + DeserializeOwned>(&self, key: &str) -> Result<Option<T>, Status> {
         let (tx, rx) = oneshot::channel();
         self.tx_kad
-            .send(Command::GetRequests {
-                key: file_hash.to_owned(),
+            .send(Command::Get {
+                key: key.to_owned(),
                 resp: tx,
             })
             .await
             .unwrap();
-        rx.await.unwrap()
+
+        let res = rx.await.unwrap()?;
+        Ok(res.map(|res| serde_json::from_str(&res).unwrap()))
     }
 
-    pub async fn set_requests(
+    pub async fn set<T: DhtEntry>(
         &self,
-        file_hash: &str,
-        requests: Vec<FileRequest>,
+        key: &str,
+        value: T,
     ) -> Result<(), Status> {
-        let serialized = serde_json::to_string(&requests).map_err(|err| {
+        let serialized = serde_json::to_string(&value).map_err(|err| {
             eprintln!("{err}");
             Status::internal("Failed to serialize requests")
         })?;
@@ -434,7 +434,7 @@ impl DhtClient {
 
         self.tx_kad
             .send(Command::Set {
-                key: String::from("Vec<FileRequest>/") + file_hash,
+                key: format!("{}/{key}", T::key_namespace()),
                 val: serialized,
                 resp: tx,
             })
@@ -442,5 +442,12 @@ impl DhtClient {
             .unwrap();
 
         rx.await.unwrap()
+    }
+    
+    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<Vec<FileRequest>>, Status> {
+        self.get::<Vec<FileRequest>>(file_hash).await
+    }
+    pub async fn set_requests(&self, key: &str, requests: Vec<FileRequest>) -> Result<(), Status> {
+        self.set::<Vec<FileRequest>>(key, requests).await
     }
 }
