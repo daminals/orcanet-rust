@@ -18,7 +18,7 @@ pub fn get_current_time() -> u64 {
     since_the_epoch.as_secs()
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileRequest {
     // apparently the field is not required in proto3? need to unwrap option
     pub user: User,

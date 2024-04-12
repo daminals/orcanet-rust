@@ -160,8 +160,7 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                         // wake up tasks that are waiting for response
                         for waiting in pending_get.get_mut(key_str).expect("Expected key in waiting map").drain(..) {
                             let value_str = std::str::from_utf8(value.as_ref()).unwrap().to_owned();
-                            let requests = serde_json::from_str(&value_str).unwrap();
-                            let _ = waiting.send(Ok(Some(requests)));
+                            let _ = waiting.send(Ok(Some(value_str)));
                         }
                     }
                     kad::QueryResult::GetRecord(Err(err)) => {
@@ -226,7 +225,7 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
             //SwarmEvent::IncomingConnection { connection_id, local_addr, send_back_addr } => todo!(),
             //SwarmEvent::IncomingConnectionError { connection_id, local_addr, send_back_addr, error } => todo!(),
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
-                eprintln!("Failed to connected to {peer_id:?} with error {error}");
+                eprintln!("Failed to connect to {peer_id:?} with error {error}");
                 if let Some(peer_id) = peer_id {
                     if let Some(sender) = pending_dial.remove(&peer_id) {
                         let _ = sender.send(Err(peer_id)).await;
@@ -409,7 +408,7 @@ impl DhtClient {
         let (tx, rx) = oneshot::channel();
         self.tx_kad
             .send(Command::Get {
-                key: key.to_owned(),
+                key: format!("{}/{key}", T::key_namespace()),
                 resp: tx,
             })
             .await
