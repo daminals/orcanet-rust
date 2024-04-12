@@ -47,7 +47,7 @@ async fn check_holders_registered() {
         price: 100,
     };
 
-    let file_hash = "ratcoin.js-hash".to_owned();
+    let file_hash = "ratcoin.js-hash-2".to_owned();
     let register_file_request = RegisterFileRequest {
         user: Some(user),
         file_hash: file_hash.clone(),

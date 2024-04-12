@@ -73,6 +73,8 @@ are used to configure the Kademlia node running on the application.
   * Space separated list of Multiaddr peer nodes to connect to in order to
   bootstrap the node onto a Kademlia network.
   * *If this is not provided, the application will start a new Kademlia network*
+  * **The provided peer nodes cannot be on the same local network in order for**
+  **the node to act as a server**
 * `private-key`
   * Private key in order for the node to be set up as a Kademlia server node.
   * The application will print out the peer id derived from this key.
