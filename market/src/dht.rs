@@ -448,7 +448,12 @@ impl DhtClient {
         self.get::<Vec<FileRequest>>(file_hash).await
     }
     pub async fn set_requests(&self, key: &str, requests: Vec<FileRequest>) -> Result<(), Status> {
-        self.set::<ProvidedFiles>("all_files", ProvidedFiles(requests.iter().map(|req| req.file_hash.clone()).collect())).await.unwrap();
+        self.set::<ProvidedFiles>(
+            "all_files",
+            ProvidedFiles(requests.iter().map(|req| req.file_hash.clone()).collect()),
+        )
+        .await
+        .unwrap();
         self.set::<Vec<FileRequest>>(key, requests).await
     }
 }
