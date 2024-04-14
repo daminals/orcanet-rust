@@ -277,11 +277,12 @@ impl Configurations {
         Ok(self.wallet.clone().unwrap())
     }
 
-    // Get the wallet
-    pub fn get_wallet(&self) -> Option<Arc<RwLock<Wallet>>> {
-        match self.wallet.clone() {
-            Some(wallet) => Some(wallet.clone()),
-            None => None,
-        }
+    // Get the wallet (connect if not already connected)
+    pub async fn get_wallet(&mut self) -> Result<Arc<RwLock<Wallet>>> {
+        let wallet = match &self.wallet {
+            Some(wallet) => wallet.clone(),
+            None => self.connect_wallet().await?,
+        };
+        Ok(wallet)
     }
 }

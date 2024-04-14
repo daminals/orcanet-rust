@@ -117,9 +117,9 @@ pub fn cli() -> Command {
                 .arg_required_else_help(true)
                 .subcommand_required(true)
                 .subcommand(
-                    Command::new("connect")
-                        .about("Connect to a wallet server")
-                        .arg(arg!(<SERVER> "The wallet server to connect to").required(false)),
+                    Command::new("set")
+                        .about("Set the wallet server to connect to")
+                        .arg(arg!(<SERVER> "The wallet server to connect to").required(true)),
                 )
                 .subcommand(Command::new("address").about("Get the address of the wallet"))
                 .subcommand(Command::new("balance").about("Get the balance of the wallet"))
@@ -134,7 +134,11 @@ pub fn cli() -> Command {
                     Command::new("pay")
                         .about("Pay an invoice")
                         .arg(arg!(<INVOICE> "The invoice to pay").required(true))
-                        .arg(arg!(<AMOUNT> "The amount to pay").required(false).value_parser(value_parser!(f32))),
+                        .arg(
+                            arg!(<AMOUNT> "The amount to pay")
+                                .required(false)
+                                .value_parser(value_parser!(f32)),
+                        ),
                 )
                 .subcommand(
                     Command::new("check")
@@ -306,11 +310,7 @@ pub async fn handle_arg_matches(
             }
         }
         Some(("wallet", wallet_matches)) => match wallet_matches.subcommand() {
-            Some(("connect", connect_matches)) => {
-                if let Some(wallet) = config.get_wallet() {
-                    let wallet = wallet.read().await;
-                    return Err(anyhow!("Wallet already connected: {}", wallet.address));
-                }
+            Some(("set", connect_matches)) => {
                 if let Some(server) = connect_matches.get_one::<String>("SERVER") {
                     config.set_wallet_server(server.clone());
                 }
@@ -318,17 +318,13 @@ pub async fn handle_arg_matches(
                 Ok(())
             }
             Some(("address", _)) => {
-                let wallet = config
-                    .get_wallet()
-                    .ok_or_else(|| anyhow!("No wallet connected"))?;
+                let wallet = config.get_wallet().await?;
                 let wallet = wallet.read().await;
                 println!("Wallet address: {}", wallet.address);
                 Ok(())
             }
             Some(("balance", _)) => {
-                let wallet = config
-                    .get_wallet()
-                    .ok_or_else(|| anyhow!("No wallet connected"))?;
+                let wallet = config.get_wallet().await?;
                 let mut wallet = wallet.write().await;
                 let balance = wallet.get_balance().await?;
                 println!("Wallet balance: {}", balance);
@@ -339,9 +335,7 @@ pub async fn handle_arg_matches(
                     Some(amount) => *amount,
                     None => Err(anyhow!("No amount provided"))?,
                 };
-                let wallet = config
-                    .get_wallet()
-                    .ok_or_else(|| anyhow!("No wallet connected"))?;
+                let wallet = config.get_wallet().await?;
                 let mut wallet = wallet.write().await;
                 let invoice = wallet.create_invoice(amount).await?;
                 println!("Invoice: {}", invoice);
@@ -353,9 +347,7 @@ pub async fn handle_arg_matches(
                     None => Err(anyhow!("No invoice provided"))?,
                 };
                 let amount = pay_matches.get_one::<f32>("AMOUNT").map(|a| *a);
-                let wallet = config
-                    .get_wallet()
-                    .ok_or_else(|| anyhow!("No wallet connected"))?;
+                let wallet = config.get_wallet().await?;
                 let mut wallet = wallet.write().await;
                 wallet.pay_invoice(invoice, amount).await?;
                 println!("Invoice paid");
@@ -366,12 +358,13 @@ pub async fn handle_arg_matches(
                     Some(invoice) => invoice.clone(),
                     None => Err(anyhow!("No invoice provided"))?,
                 };
-                let wallet = config
-                    .get_wallet()
-                    .ok_or_else(|| anyhow!("No wallet connected"))?;
+                let wallet = config.get_wallet().await?;
                 let mut wallet = wallet.write().await;
                 let status = wallet.check_invoice(invoice).await?;
-                println!("Invoice Amount: {}, Amount Paid: {}, Fully Paid: {}", status.amount, status.amount_paid, status.paid);
+                println!(
+                    "Invoice Amount: {}, Amount Paid: {}, Fully Paid: {}",
+                    status.amount, status.amount_paid, status.paid
+                );
                 Ok(())
             }
             _ => Err(anyhow!("Invalid subcommand")),
