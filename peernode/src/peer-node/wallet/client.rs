@@ -12,12 +12,14 @@ pub mod coin {
 pub struct InvoicePayment {
     pub invoice: String,
     pub wallet: String,
+    pub amount: Option<f32>,
     pub signature: String,
     pub pubkey: String,
 }
 
 pub struct InvoiceStatus {
     pub amount: f32,
+    pub amount_paid: f32,
     pub paid: bool,
 }
 
@@ -77,6 +79,7 @@ impl CoinClient {
             .pay_invoice(PayInvoiceRequest {
                 invoice: payment.invoice,
                 wallet: payment.wallet,
+                amount: payment.amount,
                 signature: payment.signature,
                 pubkey: payment.pubkey,
             })
@@ -97,6 +100,7 @@ impl CoinClient {
 
         Ok(InvoiceStatus {
             amount: response.amount,
+            amount_paid: response.amount_paid,
             paid: response.paid,
         })
     }

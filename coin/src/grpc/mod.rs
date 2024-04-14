@@ -52,6 +52,7 @@ impl Coin for CoinService {
 
         let reply = GetInvoiceReply {
             amount: invoice.amount,
+            amount_paid: invoice.amount_paid,
             paid: invoice.paid,
         };
 
@@ -67,6 +68,7 @@ impl Coin for CoinService {
         let valid = crypto::validate_payment(
             &request.invoice,
             &request.wallet,
+            request.amount,
             &request.signature,
             &request.pubkey,
         );
@@ -75,7 +77,7 @@ impl Coin for CoinService {
         }
 
         // Update the database
-        if let Err(e) = self.db.pay_invoice(&request.invoice, &request.wallet).await {
+        if let Err(e) = self.db.pay_invoice(&request.invoice, &request.wallet, request.amount).await {
             return Err(Status::invalid_argument(e.to_string()));
         }
 

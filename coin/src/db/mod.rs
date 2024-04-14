@@ -8,9 +8,9 @@ use anyhow::{anyhow, Result};
 pub struct Invoice {
     pub id: String,
     pub amount: f32,
+    pub amount_paid: f32,
     pub wallet: String,
     pub paid: bool,
-    pub paid_by: String,
 }
 
 pub struct Database {
@@ -32,9 +32,9 @@ impl Database {
         let invoice = Invoice {
             id: id.clone(),
             amount,
+            amount_paid: 0.0,
             wallet,
             paid: false,
-            paid_by: "".to_string(),
         };
 
         let mut invoices = self.invoices.write().await;
@@ -44,7 +44,7 @@ impl Database {
     }
 
     // Pay an invoice
-    pub async fn pay_invoice(&self, id: &str, wallet: &str) -> Result<()> {
+    pub async fn pay_invoice(&self, id: &str, wallet: &str, amount: Option<f32>) -> Result<()> {
         // Get the invoice
         let mut invoices = self.invoices.write().await;
         let invoice = invoices.get_mut(id).ok_or(anyhow!("Invoice not found"))?;
@@ -54,8 +54,17 @@ impl Database {
             return Err(anyhow!("Invoice already paid"));
         }
 
+        // Check for overpayment
+        if let Some(amount) = amount {
+            if amount + invoice.amount_paid > invoice.amount {
+                return Err(anyhow!("Overpayment"));
+            }
+        }
+
+        // Calculate the amount to pay (pay the full amount if not specified)
+        let amount = amount.unwrap_or(invoice.amount - invoice.amount_paid);
+
         // Check for sufficient funds
-        let amount = invoice.amount;
         let mut balances = self.balances.write().await;
         let balance = balances.entry(wallet.to_string()).or_insert(0.0);
         if *balance < amount {
@@ -70,9 +79,11 @@ impl Database {
         let creator_balance = balances.entry(creator).or_insert(0.0);
         *creator_balance += amount;
 
-        // Mark the invoice as paid
-        invoice.paid = true;
-        invoice.paid_by = wallet.to_string();
+        // Update the invoice
+        invoice.amount_paid += amount;
+        if invoice.amount_paid >= invoice.amount {
+            invoice.paid = true;
+        }
 
         Ok(())
     }

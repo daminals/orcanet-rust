@@ -133,7 +133,8 @@ pub fn cli() -> Command {
                 .subcommand(
                     Command::new("pay")
                         .about("Pay an invoice")
-                        .arg(arg!(<INVOICE> "The invoice to pay").required(true)),
+                        .arg(arg!(<INVOICE> "The invoice to pay").required(true))
+                        .arg(arg!(<AMOUNT> "The amount to pay").required(false).value_parser(value_parser!(f32))),
                 )
                 .subcommand(
                     Command::new("check")
@@ -351,11 +352,12 @@ pub async fn handle_arg_matches(
                     Some(invoice) => invoice.clone(),
                     None => Err(anyhow!("No invoice provided"))?,
                 };
+                let amount = pay_matches.get_one::<f32>("AMOUNT").map(|a| *a);
                 let wallet = config
                     .get_wallet()
                     .ok_or_else(|| anyhow!("No wallet connected"))?;
                 let mut wallet = wallet.write().await;
-                wallet.pay_invoice(invoice).await?;
+                wallet.pay_invoice(invoice, amount).await?;
                 println!("Invoice paid");
                 Ok(())
             }
@@ -369,7 +371,7 @@ pub async fn handle_arg_matches(
                     .ok_or_else(|| anyhow!("No wallet connected"))?;
                 let mut wallet = wallet.write().await;
                 let status = wallet.check_invoice(invoice).await?;
-                println!("Invoice Amount: {}, Paid: {}", status.amount, status.paid);
+                println!("Invoice Amount: {}, Amount Paid: {}, Fully Paid: {}", status.amount, status.amount_paid, status.paid);
                 Ok(())
             }
             _ => Err(anyhow!("Invalid subcommand")),

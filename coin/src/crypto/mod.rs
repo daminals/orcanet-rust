@@ -3,7 +3,7 @@ use ring::{
     signature,
 };
 
-pub fn validate_payment(invoice: &str, wallet: &str, signature: &str, pubkey: &str) -> bool {
+pub fn validate_payment(invoice: &str, wallet: &str, amount: Option<f32>, signature: &str, pubkey: &str) -> bool {
     // Verify the public key matches the wallet
     let pubkey = hex::decode(pubkey).unwrap();
     let sha256_digest = digest(&SHA256, pubkey.as_ref());
@@ -16,7 +16,10 @@ pub fn validate_payment(invoice: &str, wallet: &str, signature: &str, pubkey: &s
     let pubkey = signature::UnparsedPublicKey::new(&signature::ED25519, pubkey);
     let signature = hex::decode(signature).unwrap();
 
-    let expected = format!("{}{}", invoice, wallet);
+    let expected = match amount {
+        Some(amount) => format!("{}{}{}", invoice, wallet, amount),
+        None => format!("{}{}", invoice, wallet),
+    };
     let expected = expected.as_bytes();
     match pubkey.verify(expected, &signature) {
         Ok(_) => return true,

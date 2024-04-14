@@ -87,14 +87,14 @@ async fn main() -> Result<()> {
                     .load_preset(UTF8_FULL)
                     .apply_modifier(UTF8_ROUND_CORNERS)
                     .set_content_arrangement(ContentArrangement::Dynamic)
-                    .set_header(vec!["ID", "Amount", "Wallet", "Paid", "Paid By"]);
+                    .set_header(vec!["ID", "Amount", "Amount Paid", "Wallet", "Paid"]);
                 for invoice in invoices.values() {
                     table.add_row(vec![
                         Cell::new(&invoice.id),
                         Cell::new(&invoice.amount.to_string()),
+                        Cell::new(&invoice.amount_paid.to_string()),
                         Cell::new(&invoice.wallet),
                         Cell::new(&invoice.paid.to_string()),
-                        Cell::new(&invoice.paid_by),
                     ]);
                 }
                 println!("{}", table);

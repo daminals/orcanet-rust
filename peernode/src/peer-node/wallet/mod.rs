@@ -87,9 +87,12 @@ impl Wallet {
     }
 
     // Pay an invoice
-    pub async fn pay_invoice(&mut self, invoice: String) -> Result<()> {
+    pub async fn pay_invoice(&mut self, invoice: String, amount: Option<f32>) -> Result<()> {
         // Sign the invoice + wallet address
-        let combined = format!("{}{}", invoice, self.address.clone());
+        let combined = match amount {
+            Some(amount) => format!("{}{}{}", invoice, self.address.clone(), amount),
+            None => format!("{}{}", invoice, self.address.clone()),
+        };
         let signature = self.sign(combined.as_bytes())?;
 
         // Pay the invoice
@@ -97,6 +100,7 @@ impl Wallet {
             .pay_invoice(client::InvoicePayment {
                 invoice,
                 wallet: self.address.clone(),
+                amount,
                 signature: hex::encode(signature),
                 pubkey: self.pubkey.clone(),
             })

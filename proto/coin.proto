@@ -31,14 +31,16 @@ message GetInvoiceRequest {
 
 message GetInvoiceReply {
     float amount = 1;
-    bool paid = 2;
+    float amountPaid = 2;
+    bool paid = 3;
 }
 
 message PayInvoiceRequest {
     string invoice = 1;
     string wallet = 2;
-    string signature = 3;
-    string pubkey = 4;
+    optional float amount = 3;
+    string signature = 4;
+    string pubkey = 5;
 }
 
 message PayInvoiceReply {
