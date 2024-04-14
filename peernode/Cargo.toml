@@ -1,5 +1,5 @@
 [package]
-name = "orcanet-rust"
+name = "peernode"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,11 @@ edition = "2021"
 [[bin]] # Bin to run the gRPC client
 name = "peer-node"
 path = "src/peer-node/client.rs"
+
+[lib]
+name = "cli_test"           # The name of the target.
+path = "src/peer-node/cli/test.rs"    # The source file of the target.
+test = true            # Is tested by default.
 
 [dependencies]
 tonic = "0.11"
@@ -26,8 +31,6 @@ uuid = { version = "1.8.0", features = ["v4"] }
 config = "0.14.0"
 serde_json = "1.0.115"
 base64 = "0.22.0"
-ctrlc = "3.4.4"
-ctrlc-async = "3.2.2"
 
 [build-dependencies]
 tonic-build = "0.11"

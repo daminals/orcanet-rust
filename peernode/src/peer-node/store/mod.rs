@@ -39,8 +39,7 @@ impl Configurations {
                     }
                 }
             }
-            Err(e) => {
-                // eprintln!("Failed to load configuration: {:?}", e);
+            Err(_) => {
                 return Self::default().await;
             }
         };
@@ -239,7 +238,7 @@ impl Configurations {
             }
         }
 
-        // set the port
+        // Set the port
         self.set_port(port.clone());
 
         let join =
