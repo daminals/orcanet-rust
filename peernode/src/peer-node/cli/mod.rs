@@ -250,10 +250,6 @@ pub async fn handle_arg_matches(
                     // Add your implementation for the upload subcommand here
                     Ok(())
                 }
-                Some(("send", _send_matches)) => {
-                    // Add your implementation for the send subcommand here
-                    Ok(())
-                }
                 Some(("ls", ls_matches)) => {
                     let file_hash = match ls_matches.get_one::<String>("FILE_HASH") {
                         Some(file_hash) => file_hash.clone(),
