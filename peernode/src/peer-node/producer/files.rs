@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use glob::glob;
 use sha2::Digest;
 use sha2::Sha256;
@@ -135,6 +135,15 @@ impl FileMap {
 
         prices.clone()
     }
+
+    // Get the price of a file by its hash
+    pub async fn get_price(&self, hash: &str) -> Option<i64> {
+        // Get a read lock on the prices map
+        let prices = self.prices.read().await;
+
+        let price = prices.get(hash)?;
+        Some(*price)
+    }
 }
 
 pub struct FileAccessType {
@@ -142,13 +151,39 @@ pub struct FileAccessType {
 }
 
 impl FileAccessType {
-    // chunk size = 4mb
+    // chunk size = 4 MB
     const CHUNK_SIZE: u64 = 4 * 1024 * 1024;
 
     pub fn new(file: &str) -> Result<Self> {
         Ok(FileAccessType {
             file_path: file.to_string(),
         })
+    }
+
+    // Get the name of the file
+    pub fn get_name(&self) -> Result<String> {
+        let path = PathBuf::from(&self.file_path);
+        let name = path
+            .file_name()
+            .ok_or_else(|| anyhow!("Failed to get file name from {:?}", &self.file_path))?;
+        Ok(name.to_string_lossy().to_string())
+    }
+
+    // Get the size of the file
+    pub async fn get_size(&self) -> Result<u64> {
+        let metadata = tokio::fs::metadata(&self.file_path).await?;
+        Ok(metadata.len())
+    }
+
+    // Get the size of a chunk
+    pub async fn get_chunk_size(&self, chunk: u64) -> Result<u64> {
+        let metadata = tokio::fs::metadata(&self.file_path).await?;
+        let total_chunks = metadata.len() / Self::CHUNK_SIZE;
+        if chunk == total_chunks {
+            Ok(metadata.len() % Self::CHUNK_SIZE)
+        } else {
+            Ok(Self::CHUNK_SIZE)
+        }
     }
 
     pub async fn get_chunk(&self, desired_chunk: u64) -> Result<Option<Vec<u8>>> {

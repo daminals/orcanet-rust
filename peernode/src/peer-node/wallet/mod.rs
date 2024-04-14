@@ -1,11 +1,14 @@
 pub mod client;
 
+use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
 use ring::{
     digest::{digest, SHA256},
     rand,
     signature::{self, KeyPair},
 };
+use tokio::sync::RwLock;
 
 pub struct Wallet {
     pub address: String,
@@ -13,6 +16,8 @@ pub struct Wallet {
     keypair: signature::Ed25519KeyPair,
     client: client::CoinClient,
 }
+
+pub type AsyncWallet = Arc<RwLock<Wallet>>;
 
 impl Wallet {
     pub async fn new(server: String) -> Result<Wallet> {

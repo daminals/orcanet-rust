@@ -1,5 +1,5 @@
-use crate::producer;
 use crate::wallet::Wallet;
+use crate::{producer, wallet::AsyncWallet};
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use tokio::sync::RwLock;
 pub struct Configurations {
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
-    wallet: Option<Arc<RwLock<Wallet>>>,
+    wallet: Option<AsyncWallet>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -233,7 +233,7 @@ impl Configurations {
     }
 
     pub async fn start_http_client(&mut self, port: String) {
-        // stop the current http client
+        // Stop the current http client
         if let Some(http_client) = self.http_client.take() {
             match producer::stop_server(http_client).await {
                 Ok(_) => {}
@@ -246,8 +246,22 @@ impl Configurations {
         // Set the port
         self.set_port(port.clone());
 
-        let join =
-            producer::start_server(self.props.files.clone(), self.props.prices.clone(), port).await;
+        // Check if the wallet is connected
+        let wallet = match self.get_wallet().await {
+            Ok(wallet) => wallet,
+            Err(_) => {
+                eprintln!("Failed to connect to wallet");
+                return;
+            }
+        };
+
+        let join = producer::start_server(
+            self.props.files.clone(),
+            self.props.prices.clone(),
+            wallet.clone(),
+            port,
+        )
+        .await;
         self.set_http_client(join);
     }
 
@@ -271,14 +285,14 @@ impl Configurations {
     }
 
     // Create a wallet which connects to the coin server
-    pub async fn connect_wallet(&mut self) -> Result<Arc<RwLock<Wallet>>> {
+    pub async fn connect_wallet(&mut self) -> Result<AsyncWallet> {
         let wallet = Wallet::new(self.props.coin_sever.clone()).await?;
         self.wallet = Some(Arc::new(RwLock::new(wallet)));
         Ok(self.wallet.clone().unwrap())
     }
 
     // Get the wallet (connect if not already connected)
-    pub async fn get_wallet(&mut self) -> Result<Arc<RwLock<Wallet>>> {
+    pub async fn get_wallet(&mut self) -> Result<AsyncWallet> {
         let wallet = match &self.wallet {
             Some(wallet) => wallet.clone(),
             None => self.connect_wallet().await?,

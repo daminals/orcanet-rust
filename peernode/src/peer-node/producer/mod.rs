@@ -1,23 +1,23 @@
-mod db;
 pub mod files;
 mod http;
+mod state;
 
-use crate::grpc::MarketClient;
+use crate::{grpc::MarketClient, wallet::AsyncWallet};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-
 pub async fn start_server(
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
+    wallet: AsyncWallet,
     port: String,
 ) -> tokio::task::JoinHandle<()> {
     // Launch the HTTP server in the background
     let http_file_map = Arc::new(files::FileMap::new(files, prices));
     tokio::spawn(async move {
-        if let Err(e) = http::run(http_file_map, port).await {
+        if let Err(e) = http::run(http_file_map, wallet, port).await {
             eprintln!("HTTP server error: {}", e);
         }
     })
