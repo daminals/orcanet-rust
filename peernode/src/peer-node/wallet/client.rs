@@ -3,7 +3,7 @@ use tonic::transport::Channel;
 use anyhow::Result;
 
 use coin::coin_client::CoinClient as CoinServiceClient;
-use coin::{GetBalanceRequest, CreateInvoiceRequest, PayInvoiceRequest, GetInvoiceRequest};
+use coin::{CreateInvoiceRequest, GetBalanceRequest, GetInvoiceRequest, PayInvoiceRequest};
 
 pub mod coin {
     tonic::include_proto!("coin");

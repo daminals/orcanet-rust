@@ -3,8 +3,8 @@ use crate::wallet::Wallet;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
+use tokio::sync::RwLock;
 
 #[derive()]
 pub struct Configurations {
