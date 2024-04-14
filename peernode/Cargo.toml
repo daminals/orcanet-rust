@@ -26,6 +26,10 @@ uuid = { version = "1.8.0", features = ["v4"] }
 config = "0.14.0"
 serde_json = "1.0.115"
 base64 = "0.22.0"
+ctrlc = "3.4.4"
+ctrlc-async = "3.2.2"
+ring = "0.17.8"
+hex = "0.4.3"
 
 [build-dependencies]
 tonic-build = "0.11"

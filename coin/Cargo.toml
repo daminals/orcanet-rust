@@ -1,0 +1,22 @@
+[package]
+name = "orcanet-coin"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "coin-server"
+path = "src/server.rs"
+
+[dependencies]
+tonic = "0.11"
+prost = "0.12"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+anyhow = "1.0.82"
+ring = "0.17.8"
+hex = "0.4.3"
+uuid = { version = "1.8.0", features = ["v4"] }
+clap = { version = "4.5.4", features = ["derive"] }
+comfy-table = "7.1.1"
+
+[build-dependencies]
+tonic-build = "0.11"

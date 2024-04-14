@@ -3,6 +3,7 @@ pub mod consumer;
 pub mod grpc;
 pub mod producer;
 pub mod store;
+pub mod wallet;
 
 use std::io::{self, Write};
 use store::Configurations;

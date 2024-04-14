@@ -1,19 +1,23 @@
 use crate::producer;
+use crate::wallet::Wallet;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::PathBuf};
+use tokio::sync::RwLock;
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 #[derive()]
 pub struct Configurations {
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
+    wallet: Option<Arc<RwLock<Wallet>>>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Properties {
     name: String,
     market: String,
+    coin_sever: String,
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
     tokens: HashMap<String, String>,
@@ -24,7 +28,6 @@ pub struct Properties {
 impl Configurations {
     pub async fn new() -> Self {
         let config = Config::builder()
-            // .set_default("market", "localhost:50051")?
             .add_source(File::new("config", FileFormat::Json))
             .build();
         let props = match config {
@@ -45,6 +48,7 @@ impl Configurations {
         Configurations {
             props,
             http_client: None,
+            wallet: None,
         }
     }
 
@@ -53,12 +57,14 @@ impl Configurations {
             props: Properties {
                 name: "default".to_string(),
                 market: "localhost:50051".to_string(),
+                coin_sever: "localhost:50052".to_string(),
                 files: HashMap::new(),
                 prices: HashMap::new(),
                 tokens: HashMap::new(),
                 port: "8080".to_string(),
             },
             http_client: None,
+            wallet: None,
         };
         default.write();
         return default;
@@ -253,6 +259,29 @@ impl Configurations {
                     eprintln!("Failed to stop HTTP server");
                 }
             }
+        }
+    }
+
+    pub fn set_wallet_server(&mut self, server: String) {
+        self.props.coin_sever = server.clone();
+    }
+
+    pub fn get_wallet_server(&self) -> String {
+        self.props.coin_sever.clone()
+    }
+
+    // Create a wallet which connects to the coin server
+    pub async fn connect_wallet(&mut self) -> Result<Arc<RwLock<Wallet>>> {
+        let wallet = Wallet::new(self.props.coin_sever.clone()).await?;
+        self.wallet = Some(Arc::new(RwLock::new(wallet)));
+        Ok(self.wallet.clone().unwrap())
+    }
+
+    // Get the wallet
+    pub fn get_wallet(&self) -> Option<Arc<RwLock<Wallet>>> {
+        match self.wallet.clone() {
+            Some(wallet) => Some(wallet.clone()),
+            None => None,
         }
     }
 }

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package coin;
+
+service Coin {
+    // Create an invoice for a payment
+    rpc CreateInvoice(CreateInvoiceRequest) returns (CreateInvoiceReply) {}
+
+    // Get the status of an invoice
+    rpc GetInvoice(GetInvoiceRequest) returns (GetInvoiceReply) {}
+
+    // Pay an invoice
+    rpc PayInvoice(PayInvoiceRequest) returns (PayInvoiceReply) {}
+
+    // Get the balance of a wallet
+    rpc GetBalance(GetBalanceRequest) returns (GetBalanceReply) {}
+}
+
+message CreateInvoiceRequest {
+    float amount = 1;
+    string wallet = 2;
+}
+
+message CreateInvoiceReply {
+    string invoice = 1;
+}
+
+message GetInvoiceRequest {
+    string invoice = 1;
+}
+
+message GetInvoiceReply {
+    float amount = 1;
+    bool paid = 2;
+}
+
+message PayInvoiceRequest {
+    string invoice = 1;
+    string wallet = 2;
+    string signature = 3;
+    string pubkey = 4;
+}
+
+message PayInvoiceReply {
+    bool paid = 1;
+}
+
+message GetBalanceRequest {
+    string wallet = 1;
+}
+
+message GetBalanceReply {
+    float balance = 1;
+}
