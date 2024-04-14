@@ -143,7 +143,10 @@ pub async fn handle_arg_matches(
                         Some(market) => config.set_market(market.to_owned()),
                         None => config.get_market(),
                     };
-                    let ip = register_matches.get_one::<String>("IP");
+                    let ip = match register_matches.get_one::<String>("IP") {
+                        Some(ip) => Some(ip.clone()),
+                        None => None,
+                    };
                     producer::register_files(config.get_prices(), market, port.clone(), ip).await?;
                     config.start_http_client(port).await;
                     Ok(())

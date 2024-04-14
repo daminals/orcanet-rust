@@ -8,11 +8,6 @@ edition = "2021"
 name = "peer-node"
 path = "src/peer-node/client.rs"
 
-[lib]
-name = "cli_test"           # The name of the target.
-path = "src/peer-node/cli/test.rs"    # The source file of the target.
-test = true            # Is tested by default.
-
 [dependencies]
 tonic = "0.11"
 prost = "0.12"

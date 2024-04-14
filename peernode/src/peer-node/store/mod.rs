@@ -2,7 +2,6 @@ use crate::producer;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive()]

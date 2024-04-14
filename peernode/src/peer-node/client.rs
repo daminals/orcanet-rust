@@ -45,6 +45,8 @@ async fn main() {
 
     println!("Orcanet Peernode CLI: Type 'help' for a list of commands");
     loop {
+        // Show the command prompt
+        print!("> ");
         // Print command prompt and get command
         io::stdout().flush().expect("Couldn't flush stdout");
         // take in user input, process it with cli, and then execute the command
@@ -61,7 +63,14 @@ async fn main() {
 
         let matches = cli
             .clone()
-            .get_matches_from(input.split_whitespace().collect::<Vec<&str>>());
+            .try_get_matches_from(input.split_whitespace().collect::<Vec<&str>>());
+        let matches = match matches {
+            Ok(matches) => matches,
+            Err(e) => {
+                eprintln!("{}", e);
+                continue;
+            }
+        };
         match handle_arg_matches(matches, &mut config).await {
             Ok(_) => {}
             Err(e) => eprintln!("\x1b[93mError:\x1b[0m {}", e),
