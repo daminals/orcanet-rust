@@ -1,9 +1,7 @@
+use crate::market::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::{get_current_time, EXPIRATION_OFFSET};
 use std::collections::{HashMap, HashSet};
-
-use crate::FileRequest;
 
 pub trait DhtEntry: Serialize + DeserializeOwned {
     fn key_namespace() -> &'static str;

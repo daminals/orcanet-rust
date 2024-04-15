@@ -4,12 +4,20 @@ mod http;
 
 use std::sync::Arc;
 
-use crate::grpc::MarketClient;
+use crate::market::market::Market;
 
 use anyhow::{anyhow, Result};
+use libp2p::Multiaddr;
 
-pub async fn run(market: String, ip: Option<String>, port: Option<u16>) -> Result<()> {
-    let mut client = MarketClient::new(market).await?;
+
+pub async fn run(
+    bootstrap_peers: &[Multiaddr],
+    private_key: Option<String>,
+    listen_address: Option<Multiaddr>,
+    ip: Option<String>,
+    port: Option<u16>,
+) -> Result<()> {
+    let mut client = Market::new(bootstrap_peers, private_key, listen_address).await;
 
     // Load the files
     let file_map = Arc::new(files::FileMap::new());

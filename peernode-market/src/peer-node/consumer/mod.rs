@@ -1,11 +1,17 @@
 pub mod http;
 
-use crate::grpc::MarketClient;
+use crate::market::market::Market;
 
 use anyhow::Result;
+use libp2p::Multiaddr;
 
-pub async fn run(market: String, file_hash: String) -> Result<()> {
-    let mut client = MarketClient::new(market).await?;
+pub async fn run(
+    bootstrap_peers: &[Multiaddr],
+    private_key: Option<String>,
+    listen_address: Option<Multiaddr>,
+    file_hash: String,
+) -> Result<()> {
+    let client = Market::new(bootstrap_peers, private_key, listen_address).await;
 
     // Check the producers for the file
     println!("Consumer: Checking producers for file hash {}", file_hash);
