@@ -7,8 +7,13 @@ use anyhow::Result;
 use self::http::GetFileResponse;
 
 pub async fn list_producers(file_hash: String, client: &mut Market) -> Result<()> {
-    // let mut client = MarketClient::new(market).await?;
-    let producers = client.check_holders(file_hash).await?;
+    let producers = match client.check_holders(file_hash.clone()).await? {
+        Some(producers) => producers,
+        None => {
+            println!("No producers for file {file_hash}");
+            return Ok(())
+        }
+    };
     for producer in producers.holders {
         // serialize the producer struct to a string
         let encoded_producer = encode::encode_user(&producer);

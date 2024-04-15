@@ -10,11 +10,11 @@ pub trait DhtEntry: Serialize + DeserializeOwned {
     fn update(key: &[u8], cur: Self, new: Self) -> Self;
 }
 
-impl DhtEntry for Vec<FileRequest> {
+impl DhtEntry for FileMetadata {
     fn key_namespace() -> &'static str {
         "Vec<FileRequest>"
     }
-    fn update(key: &[u8], cur: Vec<FileRequest>, new_values: Vec<FileRequest>) -> Vec<FileRequest> {
+    fn update(key: &[u8], cur: FileMetadata, new_values: FileMetadata) -> FileMetadata {
         let key_str = std::str::from_utf8(key).unwrap();
         /*
         // check that the key is a valid sha256 hash (right now, leave it out to make testing with the test_client easier)
@@ -23,38 +23,43 @@ impl DhtEntry for Vec<FileRequest> {
         }
         */
 
-        let mut merged_ids: HashMap<String, FileRequest> =
-            cur.iter().map(|x| (x.user.id.clone(), x.clone())).collect();
+        if key_str != new_values.file_hash {
+            println!("File hash does not match key");
+            return cur;
+        }
+
+
+        let mut merged_ids: HashMap<String, (User, u64)> =
+            cur.suppliers.iter().map(|x| (x.0.id.clone(), x.clone())).collect();
 
         let now = get_current_time();
 
         // merge new and old requests
-        for new in new_values {
+        for (supplier, expiration) in new_values.suppliers {
             // check that the expiration date is valid
-            if new.expiration < now || new.expiration > now + EXPIRATION_OFFSET {
+            if expiration < now || expiration > now + EXPIRATION_OFFSET {
                 println!("Invalid expiration");
                 continue;
             }
 
-            if key_str != new.file_hash {
-                println!("File hash does not match key");
-                continue;
-            }
-
             // if there are duplicates, just keep the furthest valid expiration time
-            if let Some(existing) = merged_ids.get_mut(&new.user.id) {
+            if let Some((existing_user, existing_expiration)) = merged_ids.get_mut(&supplier.id) {
                 // keep the longest expiration date that is within the expiration limit
                 let expiration = std::cmp::min(
-                    std::cmp::max(new.expiration, existing.expiration),
+                    std::cmp::max(expiration, *existing_expiration),
                     now + EXPIRATION_OFFSET,
                 );
-                existing.expiration = expiration;
+                *existing_user = supplier;
+                *existing_expiration = expiration;
             } else {
-                merged_ids.insert(new.user.id.clone(), new);
+                merged_ids.insert(supplier.id.clone(), (supplier, expiration));
             }
         }
 
-        merged_ids.into_values().collect()
+        FileMetadata {
+            suppliers: merged_ids.into_values().collect(),
+            ..cur
+        }
     }
 }
 

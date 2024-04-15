@@ -74,15 +74,14 @@ cargo run consumer get <FILE_HASH> <CHOSEN_PRODUCER>
 
 ### Market Server
 
-The default application built by this project will run both the market server
-with gRPC port 50051, and a Kademlia node. The `dht_client` binary will only
-run the Kademlia node. Parameters need to be provided to get the server to work
-with the Kademlia network.
+The market server has been merged into the peer node application.
+Parameters need to be provided to get the server to work with the Kademlia network.
+The `dht_client` binary will only run the Kademlia node.
 
 #### Parameters
 
-The market server and the `dht_client` binary share the same parameters, which
-are used to configure the Kademlia node running on the application.
+The `dht_client` binary requires these parameters to configure the
+Kademlia node running on the application.
 
 * `bootstrap-peers`
   * Space separated list of Multiaddr peer nodes to connect to in order to
@@ -130,10 +129,9 @@ cargo run -- --private-key private.pk8 --listen-address /ip4/0.0.0.0/tcp/6881
 cargo run --bin dht_client -- --private-key private.pk8 # by default, /ip4/0.0.0.0/tcp/6881
 ```
 
-#### Run a test client
+#### Run a market test client (deprecated)
 
 ```Shell
 cargo run --bin test_client
 ```
 
-(currently the Go test client is interoperable)

@@ -35,8 +35,6 @@ pub async fn register_files(
     port: String,
     ip: Option<String>,
 ) -> Result<()> {
-    // let mut client = MarketClient::new(market).await?;
-
     // get port from string
     let port = match port.parse::<i32>() {
         Ok(port) => port,
@@ -80,6 +78,8 @@ pub async fn register_files(
                 port,
                 price,
                 hash,
+                
+                vec![] // todo: chunk metadata
             )
             .await?;
     }

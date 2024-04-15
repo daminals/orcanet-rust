@@ -23,8 +23,6 @@ pub fn decode_user(encoded_user: String) -> Result<User> {
 
     match serde_json::from_str(&user_str) {
         Ok(user) => Ok(user),
-        Err(_) => {
-            Err(anyhow::anyhow!("Failed to parse user"))
-        }
+        Err(_) => Err(anyhow::anyhow!("Failed to parse user")),
     }
 }

@@ -2,7 +2,7 @@ use crate::market::dht_entry::*;
 use crate::market::*;
 
 use anyhow::{anyhow, Result};
-use std::collections::{hash_map, HashMap};
+use std::collections::{hash_map, HashMap, HashSet};
 use std::time::Duration;
 
 use libp2p::futures::StreamExt;
@@ -33,12 +33,12 @@ struct Behaviour {
 /// Think about concurrency issues with multiple users accessing and modifying
 /// the map at the same time later
 
-fn update_entry<T>(swarm: &mut Swarm<Behaviour>, record: Record)
+fn update_entry<T>(swarm: &mut Swarm<Behaviour>, record: Record) -> Result<()>
 where
-    T: DhtEntry + Default,
+    T: DhtEntry,
 {
-    let key_str = std::str::from_utf8(record.key.as_ref()).unwrap();
-    let value_str = std::str::from_utf8(&record.value).unwrap();
+    let key_str = std::str::from_utf8(record.key.as_ref())?;
+    let value_str = std::str::from_utf8(&record.value)?;
 
     println!("Received record {key_str:?} {value_str:?}");
 
@@ -46,7 +46,9 @@ where
 
     let cur_values: T = match cur {
         Some(cur) => serde_json::from_str(std::str::from_utf8(&cur.value).unwrap()).unwrap(),
-        None => T::default(),
+        None => {
+            return swarm.behaviour_mut().kademlia.store_mut().put(record).map_err(anyhow::Error::from);
+        }
     };
     let new_values: T = serde_json::from_str(std::str::from_utf8(&record.value).unwrap()).unwrap();
 
@@ -59,6 +61,7 @@ where
 
     let res = swarm.behaviour_mut().kademlia.store_mut().put(new_record);
     println!("{res:?}");
+    res.map_err(anyhow::Error::from)
 }
 
 // runs a kad node
@@ -125,10 +128,10 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                 if let kad::InboundRequest::PutRecord { record: Some(record), .. } = request {
                     let mut sp = record.key.as_ref().splitn(2, |&b| b == b'/');
                     let namespace = sp.next().unwrap();
-                    if namespace == Vec::<FileRequest>::key_namespace().as_bytes() {
-                        update_entry::<Vec<FileRequest>>(&mut swarm, record);
+                    if namespace == FileMetadata::key_namespace().as_bytes() {
+                        let _ = update_entry::<FileMetadata>(&mut swarm, record);
                     } else if namespace == ProvidedFiles::key_namespace().as_bytes() {
-                        update_entry::<ProvidedFiles>(&mut swarm, record);
+                        let _ = update_entry::<ProvidedFiles>(&mut swarm, record);
                     } else {
                         eprintln!("Unknown key namespace {:?}", std::str::from_utf8(namespace));
                     }
@@ -453,15 +456,17 @@ impl DhtClient {
         self.get::<ProvidedFiles>("all_files").await
     }
 
-    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<Vec<FileRequest>>, Status> {
-        self.get::<Vec<FileRequest>>(file_hash).await
+    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<FileMetadata>, Status> {
+        self.get::<FileMetadata>(file_hash).await
     }
-    pub async fn set_requests(&self, key: &str, requests: Vec<FileRequest>) -> Result<(), Status> {
+    pub async fn set_requests(&self, key: &str, requests: FileMetadata) -> Result<(), Status> {
         self.set::<ProvidedFiles>(
             "all_files",
-            ProvidedFiles(requests.iter().map(|req| req.file_hash.clone()).collect()),
+            ProvidedFiles(
+                HashSet::from([requests.file_hash.clone()])
+            ),
         )
         .await?;
-        self.set::<Vec<FileRequest>>(key, requests).await
+        self.set::<FileMetadata>(key, requests).await
     }
 }
