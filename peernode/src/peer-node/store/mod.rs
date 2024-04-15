@@ -1,3 +1,4 @@
+use crate::grpc::MarketClient;
 use crate::wallet::Wallet;
 use crate::{producer, wallet::AsyncWallet};
 use anyhow::Result;
@@ -10,6 +11,7 @@ use tokio::sync::RwLock;
 pub struct Configurations {
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
+    market_client: Option<MarketClient>,
     wallet: Option<AsyncWallet>,
 }
 
@@ -48,6 +50,7 @@ impl Configurations {
         Configurations {
             props,
             http_client: None,
+            market_client: None,
             wallet: None,
         }
     }
@@ -64,6 +67,7 @@ impl Configurations {
                 port: "8080".to_string(),
             },
             http_client: None,
+            market_client: None,
             wallet: None,
         };
         default.write();
@@ -274,6 +278,22 @@ impl Configurations {
                 }
             }
         }
+    }
+
+    pub async fn get_market_client(&mut self) -> Result<&mut MarketClient> {
+        if self.market_client.is_none() {
+            let market_client = MarketClient::new(self.get_market()).await?;
+            self.market_client = Some(market_client);
+        }
+        let market_client = self.market_client.as_mut().unwrap(); // safe to unwrap because we just set it
+        Ok(market_client)
+    }
+
+    pub async fn set_market_client(&mut self, market: String) -> Result<&mut MarketClient> {
+        let market_client = MarketClient::new(market.clone()).await?;
+        self.market_client = Some(market_client);
+        self.set_market(market);
+        Ok(self.market_client.as_mut().unwrap()) // safe to unwrap because we just set it
     }
 
     pub fn set_wallet_server(&mut self, server: String) {

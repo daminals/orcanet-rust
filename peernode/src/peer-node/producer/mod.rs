@@ -31,11 +31,11 @@ pub async fn stop_server(join_handle: tokio::task::JoinHandle<()>) -> Result<()>
 
 pub async fn register_files(
     prices: HashMap<String, i64>,
-    market: String,
+    client: &mut MarketClient,
     port: String,
     ip: Option<String>,
 ) -> Result<()> {
-    let mut client = MarketClient::new(market).await?;
+    // let mut client = MarketClient::new(market).await?;
 
     // get port from string
     let port = match port.parse::<i32>() {

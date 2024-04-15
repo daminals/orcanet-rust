@@ -6,8 +6,8 @@ use anyhow::Result;
 
 use self::http::{GetFileResponse, GetInvoiceResponse};
 
-pub async fn list_producers(file_hash: String, market: String) -> Result<()> {
-    let mut client = MarketClient::new(market).await?;
+pub async fn list_producers(file_hash: String, client: &mut MarketClient) -> Result<()> {
+    // let mut client = MarketClient::new(market).await?;
     let producers = client.check_holders(file_hash).await?;
     for producer in producers.holders {
         // serialize the producer struct to a string
