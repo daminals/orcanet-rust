@@ -1,5 +1,5 @@
 # Build image
-FROM rust:slim-buster as build
+FROM rust:slim-bookworm as build
 
 # Install the necessary dependencies
 RUN apt-get update && apt-get install -y \
@@ -27,19 +27,20 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp ./target/release/peer-node ./peer-node
 
 # Runner image
-FROM debian:buster-slim
+FROM debian:bookworm-slim
 
 # Install SSL
 RUN apt-get update && apt-get install -y \
-    libssl1.1
+    libssl3
 
 # Copy the binary from the build image
 COPY --from=build /peernode/peer-node .
 
 # Environment variables
 ENV ORCA_MARKET_ADDRESS localhost:50051
+ENV ORCA_COIN_ADDRESS localhost:50052
 ENV ORCA_EXTERNAL_IP 127.0.0.1
 ENV ORCA_HTTP_PORT 8080
 
 # Run the binary
-CMD ./peer-node producer add files 100 && ./peer-node producer register $ORCA_HTTP_PORT -m $ORCA_MARKET_ADDRESS -i $ORCA_EXTERNAL_IP
+CMD ./peer-node producer add files 100 && ./peer-node producer register $ORCA_HTTP_PORT -m $ORCA_MARKET_ADDRESS -i $ORCA_EXTERNAL_IP -w $ORCA_COIN_ADDRESS

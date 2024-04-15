@@ -7,14 +7,26 @@ services:
       - '${ORCA_HTTP_PORT}:${ORCA_HTTP_PORT}'
     environment:
       - ORCA_MARKET_ADDRESS=market:50051
+      - ORCA_COIN_ADDRESS=coin:50052
     volumes:
       - ./peernode/files:/files
     depends_on:
       market:
         condition: service_started
+      coin:
+        condition: service_started
     env_file:
       - .env
-
+  coin:
+    build:
+      context: .
+      dockerfile: docker/coin/Dockerfile
+    expose:
+      - "50052"
+    ports:
+      - "50052:50052"
+    stdin_open: true
+    tty: true
   market:
     build:
       context: .

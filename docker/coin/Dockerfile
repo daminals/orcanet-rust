@@ -13,19 +13,19 @@ WORKDIR /proto
 COPY ../proto .
 
 # Create empty project
-WORKDIR /market
+WORKDIR /coin-mock
 
 # Copy in files
-COPY market/Cargo.toml .
-COPY market/Cargo.lock .
-COPY market/build.rs .
-COPY market/src src
+COPY coin-mock/Cargo.toml .
+COPY coin-mock/Cargo.lock .
+COPY coin-mock/build.rs .
+COPY coin-mock/src src
 
 # Build the project with caching
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-	--mount=type=cache,target=/market/target \
+	--mount=type=cache,target=/coin-mock/target \
 	cargo build --release && \
-    cp ./target/release/orcanet-market-ferrous ./orcanet-market-ferrous
+    cp ./target/release/orcanet-coin ./orcanet-coin
 
 # Runner image
 FROM debian:bookworm-slim
@@ -35,7 +35,7 @@ FROM debian:bookworm-slim
 #    libssl1.1
 
 # Copy the binary from the build image
-COPY --from=build /market/orcanet-market-ferrous .
+COPY --from=build /coin-mock/orcanet-coin .
 
 # Run the binary
-CMD ./orcanet-market-ferrous
+CMD ./orcanet-coin
