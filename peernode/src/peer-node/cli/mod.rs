@@ -32,6 +32,11 @@ pub fn cli() -> Command {
                                 .short('m'),
                         )
                         .arg(
+                            arg!(<WALLET> "The wallet server to connect to")
+                                .required(false)
+                                .short('w'),
+                        )
+                        .arg(
                             arg!(<IP> "The public IP address to announce")
                                 .required(false)
                                 .short('i'),
@@ -104,7 +109,13 @@ pub fn cli() -> Command {
                         .arg(arg!(<PRODUCER> "The producer to download from").required(true))
                         .arg(arg!(<CHUNK_NUM> "The chunk number to download").required(false))
                         .arg(arg!(<CONTINUE> "Continue downloading a file").required(false)),
-                ),
+                )
+                .subcommand(
+                    Command::new("auto")
+                        .about("Downloads a file from a producer, paying as you go")
+                        .arg(arg!(<FILE_HASH> "The hash of the file to download").required(true))
+                        .arg(arg!(<PRODUCER> "The producer to download from").required(true)),
+                )
         )
         .subcommand(
             Command::new("market")
@@ -172,6 +183,9 @@ pub async fn handle_arg_matches(
                         Some(market) => config.set_market(market.to_owned()),
                         None => config.get_market(),
                     };
+                    if let Some(wallet) = register_matches.get_one::<String>("WALLET") {
+                        config.set_wallet_server(wallet.clone());
+                    }
                     let ip = match register_matches.get_one::<String>("IP") {
                         Some(ip) => Some(ip.clone()),
                         None => None,
@@ -309,6 +323,20 @@ pub async fn handle_arg_matches(
                         continue_download,
                     )
                     .await?;
+                    Ok(())
+                }
+                Some(("auto", auto_matches)) => {
+                    let file_hash = match auto_matches.get_one::<String>("FILE_HASH") {
+                        Some(file_hash) => file_hash.clone(),
+                        None => Err(anyhow!("No file hash provided"))?,
+                    };
+                    let producer = match auto_matches.get_one::<String>("PRODUCER") {
+                        Some(producer) => producer.clone(),
+                        None => Err(anyhow!("No producer provided"))?,
+                    };
+                    let wallet = config.get_wallet().await?;
+                    let token = consumer::get_file_auto(producer.clone(), file_hash, wallet).await?;
+                    config.set_token(producer, token);
                     Ok(())
                 }
                 _ => Err(anyhow!("Invalid subcommand")),

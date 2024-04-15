@@ -12,6 +12,8 @@ use tokio::io::SeekFrom;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::sync::RwLock;
 
+use crate::globals::CHUNK_SIZE;
+
 #[allow(dead_code)]
 pub struct FileMap {
     files: RwLock<HashMap<String, PathBuf>>,
@@ -151,9 +153,6 @@ pub struct FileAccessType {
 }
 
 impl FileAccessType {
-    // chunk size = 4 MB
-    const CHUNK_SIZE: u64 = 4 * 1024 * 1024;
-
     pub fn new(file: &str) -> Result<Self> {
         Ok(FileAccessType {
             file_path: file.to_string(),
@@ -178,11 +177,11 @@ impl FileAccessType {
     // Get the size of a chunk
     pub async fn get_chunk_size(&self, chunk: u64) -> Result<u64> {
         let metadata = tokio::fs::metadata(&self.file_path).await?;
-        let total_chunks = metadata.len() / Self::CHUNK_SIZE;
+        let total_chunks = metadata.len() / CHUNK_SIZE;
         if chunk == total_chunks {
-            Ok(metadata.len() % Self::CHUNK_SIZE)
+            Ok(metadata.len() % CHUNK_SIZE)
         } else if chunk < total_chunks {
-            Ok(Self::CHUNK_SIZE)
+            Ok(CHUNK_SIZE)
         } else {
             Ok(0)
         }
@@ -194,10 +193,10 @@ impl FileAccessType {
 
         // get total chunk number (file size / chunk size)
         let metadata = file.metadata().await?;
-        let total_chunks = metadata.len() / Self::CHUNK_SIZE;
+        let total_chunks = metadata.len() / CHUNK_SIZE;
 
         // create a buffer to hold the file data
-        let mut buffer = vec![0; Self::CHUNK_SIZE as usize];
+        let mut buffer = vec![0; CHUNK_SIZE as usize];
 
         // check if the desired chunk is within the file size
         if desired_chunk > total_chunks {
@@ -205,7 +204,7 @@ impl FileAccessType {
         }
 
         // seek to the desired chunk
-        file.seek(SeekFrom::Start(desired_chunk * Self::CHUNK_SIZE))
+        file.seek(SeekFrom::Start(desired_chunk * CHUNK_SIZE))
             .await?;
 
         // read the chunk into the buffer
@@ -215,7 +214,7 @@ impl FileAccessType {
             Err(e) => {
                 if e.kind() == io::ErrorKind::UnexpectedEof {
                     // read until the end of the file
-                    file.seek(SeekFrom::Start(desired_chunk * Self::CHUNK_SIZE))
+                    file.seek(SeekFrom::Start(desired_chunk * CHUNK_SIZE))
                         .await?;
                     let mut buffer = vec![];
                     file.read_to_end(&mut buffer).await?;

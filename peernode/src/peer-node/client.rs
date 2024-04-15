@@ -4,6 +4,7 @@ pub mod grpc;
 pub mod producer;
 pub mod store;
 pub mod wallet;
+pub mod globals;
 
 use std::io::{self, Write};
 use store::Configurations;

@@ -90,7 +90,7 @@ impl CoinClient {
 
     // Check the status of an invoice
     pub async fn check_invoice(&mut self, invoice: String) -> Result<InvoiceStatus> {
-        println!("gRPC Coin: Checking if invoice {} has been paid", invoice);
+        println!("gRPC Coin: Checking status of invoice: {}", invoice);
 
         let response = self
             .client
