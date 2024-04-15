@@ -131,16 +131,32 @@ pub fn cli() -> Command {
                     Command::new("set")
                         .about("Set the options for the market connection")
                         .arg_required_else_help(true)
+                        // how to provide None as an option?
                         .arg(
                             clap::Arg::new("bootstrap_peers")
                                 .short('b')
                                 .long("bootstrap_peers")
                                 .value_name("BOOTSTRAP_PEERS")
                                 .help("The bootstrap nodes to connect to")
+                                .long_help(
+"A space-separated list of Multiaddr for bootstrap nodes to connect to
+e.g. -b /ip4/192.168.0.0.1/tcp/6881/peer_id_hash1 /ip4/127.0.0.2/tcp/6881/peer_id_hash2"
+                                )
                                 .num_args(1..)
                         )
                         .arg(arg!(-k --private_key <PRIVATE_KEY> "The optional private key file to use as an id"))
-                        .arg(arg!(-l --listen_address <LISTEN_ADDRESS> "The optional listen address to run a market server on"))
+                        .arg(
+                            clap::Arg::new("listen_address")
+                                .short('l')
+                                .long("listen_address")
+                                .value_name("LISTEN_ADDRESS")
+                                .help("The optional listen address to run a market server on")
+                                .long_help(
+"If this is provided, the market sever will connect to the Kademlia network and serve data.
+Otherwise, it will run in client mode and only retrieve data from the network.
+The address must be provided as a Multiaddr,
+e.g. /ip4/0.0.0.0/tcp/6881")
+                    )
                 ),
         )
         .subcommand(Command::new("exit").about("Exits the CLI"))
