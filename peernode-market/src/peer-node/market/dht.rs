@@ -1,4 +1,5 @@
-use crate::dht_entry::DhtEntry;
+use crate::market::dht_entry::*;
+use crate::market::*;
 use crate::*;
 
 use std::collections::{hash_map, HashMap};
@@ -23,8 +24,6 @@ use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tonic::Status;
-
-use self::dht_entry::ProvidedFiles;
 
 #[derive(NetworkBehaviour)]
 struct Behaviour {
@@ -440,6 +439,7 @@ impl DhtClient {
         rx.await.unwrap()
     }
 
+    #[allow(dead_code)]
     pub async fn get_all_file_hashes(&self) -> Result<Option<ProvidedFiles>, Status> {
         self.get::<ProvidedFiles>("all_files").await
     }
@@ -452,8 +452,7 @@ impl DhtClient {
             "all_files",
             ProvidedFiles(requests.iter().map(|req| req.file_hash.clone()).collect()),
         )
-        .await
-        .unwrap();
+        .await?;
         self.set::<Vec<FileRequest>>(key, requests).await
     }
 }

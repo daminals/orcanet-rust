@@ -21,26 +21,29 @@ async fn main() {
     // Load the configuration
     let mut config = store::Configurations::new().await;
 
-    // check if there are any arguments passed to the program
-    // if there are, process them and then exit
-    if std::env::args().len() > 1 {
-        // remove the first argument which is the name of the program
-        let args = std::env::args().skip(1).collect::<Vec<String>>();
-        let matches = cli.clone().get_matches_from(args);
-        match handle_arg_matches(matches, &mut config).await {
-            Ok(_) => {}
-            Err(e) => eprintln!("\x1b[93mError:\x1b[0m {}", e),
-        };
-        // wait for the HTTP server to start
-        // tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-        if config.is_http_running() {
-            // wait for user to exit with control-c
-            tokio::signal::ctrl_c()
-                .await
-                .expect("Failed to listen for ctrl-c");
-            exit_gracefully(&mut config).await;
+    match args.producer {
+        true => {
+            producer::run(
+                &args.bootstrap_peers,
+                args.private_key,
+                args.listen_address,
+                args.ip,
+                args.port,
+            )
+            .await?
         }
-        return;
+        false => match args.file_hash {
+            Some(file_hash) => {
+                consumer::run(
+                    &args.bootstrap_peers,
+                    args.private_key,
+                    None,
+                    file_hash,
+                )
+                .await?
+            }
+            None => return Err(anyhow!("No file hash provided")),
+        },
     }
 
     println!("Orcanet Peernode CLI: Type 'help' for a list of commands");

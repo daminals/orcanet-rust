@@ -2,18 +2,30 @@ mod db;
 pub mod files;
 mod http;
 
-use crate::grpc::MarketClient;
-use std::collections::HashMap;
-use std::path::PathBuf;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use crate::market::market::Market;
 
-pub async fn start_server(
-    files: HashMap<String, PathBuf>,
-    prices: HashMap<String, i64>,
-    port: String,
-) -> tokio::task::JoinHandle<()> {
+use anyhow::{anyhow, Result};
+use libp2p::Multiaddr;
+
+
+pub async fn run(
+    bootstrap_peers: &[Multiaddr],
+    private_key: Option<String>,
+    listen_address: Option<Multiaddr>,
+    ip: Option<String>,
+    port: Option<u16>,
+) -> Result<()> {
+    let mut client = Market::new(bootstrap_peers, private_key, listen_address).await;
+
+    // Load the files
+    let file_map = Arc::new(files::FileMap::new());
+    file_map.add_all("files/**/*").await?;
+
+    // Get the port
+    let port = port.unwrap_or(8080);
+
     // Launch the HTTP server in the background
     let http_file_map = Arc::new(files::FileMap::new(files, prices));
     tokio::spawn(async move {

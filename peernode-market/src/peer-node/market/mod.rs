@@ -2,7 +2,6 @@ pub mod dht;
 pub mod dht_entry;
 pub mod market;
 
-use lib_proto::*;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -18,22 +17,25 @@ pub fn get_current_time() -> u64 {
     since_the_epoch.as_secs()
 }
 
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct User {
+    pub id: String,
+    pub name: String,
+    pub ip: String,
+    pub port: i32,
+    pub price: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HoldersResponse {
+    pub holders: Vec<User>,
+}
+
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileRequest {
-    // apparently the field is not required in proto3? need to unwrap option
     pub user: User,
     pub file_hash: String,
     pub expiration: u64,
-}
-
-impl TryFrom<RegisterFileRequest> for FileRequest {
-    type Error = ();
-    // unwrap user
-    fn try_from(req: RegisterFileRequest) -> Result<Self, Self::Error> {
-        Ok(Self {
-            user: req.user.ok_or(())?,
-            file_hash: req.file_hash,
-            expiration: get_current_time() + EXPIRATION_OFFSET,
-        })
-    }
 }

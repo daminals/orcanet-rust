@@ -1,10 +1,10 @@
 pub mod encode;
 pub mod http;
 
-use crate::grpc::{orcanet::User, MarketClient};
-use anyhow::Result;
+use crate::market::market::Market;
 
-use self::http::GetFileResponse;
+use anyhow::Result;
+use libp2p::Multiaddr;
 
 pub async fn list_producers(file_hash: String, client: &mut MarketClient) -> Result<()> {
     // let mut client = MarketClient::new(market).await?;
