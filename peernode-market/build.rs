@@ -8,3 +8,5 @@
 //        .compile(&["../proto/market.proto"], &["../proto"])?;
 //    Ok(())
 //}
+
+fn main() {}

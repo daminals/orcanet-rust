@@ -129,10 +129,11 @@ pub fn cli() -> Command {
                 // .ignore_errors(true)
                 .subcommand(
                     Command::new("set")
-                        .about("Sets the market to connect to")
-                        .arg(arg!(<BOOTSTRAP_PEERS> "The bootstrap nodes to connect to").required(false))
-                        .arg(arg!(<PRIVATE_KEY> "The optional private key file to use as an id").required(false))
-                        .arg(arg!(<LISTEN_ADDRESS> "The optional listen address to run a market server on").required(false))
+                        .about("Set the options for the market connection")
+                        .arg_required_else_help(true)
+                        .arg(arg!(-b --bootstrap_peers <BOOTSTRAP_PEERS> "The bootstrap nodes to connect to"))
+                        .arg(arg!(-k --private_key <PRIVATE_KEY> "The optional private key file to use as an id"))
+                        .arg(arg!(-l --listen_address <LISTEN_ADDRESS> "The optional listen address to run a market server on"))
                 ),
         )
         .subcommand(Command::new("exit").about("Exits the CLI"))
@@ -153,10 +154,7 @@ pub async fn handle_arg_matches(
                         None => config.get_port(),
                     };
                     let market_client = config.get_market_client().await?;
-                    let ip = match register_matches.get_one::<String>("IP") {
-                        Some(ip) => Some(ip.clone()),
-                        None => None,
-                    };
+                    let ip = register_matches.get_one::<String>("IP").map(|ip| ip.clone());
                     // let market_client = config.get_market_client().await?;
                     producer::register_files(prices, market_client, port.clone(), ip).await?;
                     config.start_http_client(port).await;
@@ -304,23 +302,61 @@ pub async fn handle_arg_matches(
         }
         Some(("market", market_matches)) => match market_matches.subcommand() {
             Some(("set", set_matches)) => {
-                let bootstrap_peers = match set_matches.get_many::<String>("BOOTSTRAP_PEERS") {
+                let bootstrap_peers = match set_matches.get_many::<String>("bootstrap_peers") {
                     Some(bootstrap_peers) => {
-                        let parsed_peers: Vec<_> = bootstrap_peers.filter_map(|x| Multiaddr::from_str(x).ok()).collect();
+                        let parsed_peers: Vec<_> = bootstrap_peers
+                            .filter_map(|x| match Multiaddr::from_str(x) {
+                                Ok(x) => Some(x),
+                                Err(e) => {
+                                    println!("Failed to parse multiaddr {x}: {e}");
+                                    None
+                                }
+                            })
+                            .collect();
                         println!("Bootstrap peers parsed: {parsed_peers:?}");
                         parsed_peers
-                    },
-                    None => config.get_bootstrap_peers(),
+                    }
+                    None => {
+                        println!(
+                            "Using existing bootstrap peers {:?}",
+                            config.get_bootstrap_peers()
+                        );
+                        config.get_bootstrap_peers()
+                    }
                 };
-                let private_key = match set_matches.get_one::<String>("PRIVATE_KEY") {
-                    Some(private_key) => Some(private_key.clone()),
-                    None => config.get_private_key(),
+                let private_key = match set_matches.get_one::<String>("private_key") {
+                    Some(private_key) => {
+                        println!("Setting market private key to {private_key}");
+                        Some(private_key.clone())
+                    }
+                    None => {
+                        println!(
+                            "Using existing private key file {:?}",
+                            config.get_private_key()
+                        );
+                        config.get_private_key()
+                    }
                 };
-                let listen_addr = match set_matches.get_one::<String>("LISTEN_ADDRESS") {
-                    Some(listen_addr) => Multiaddr::from_str(listen_addr).ok(),
-                    None => config.get_listen_address(),
+                let listen_addr = match set_matches.get_one::<String>("listen_address") {
+                    Some(listen_addr) => {
+                        let parsed = Multiaddr::from_str(listen_addr).ok();
+                        match parsed {
+                            Some(ref addr) => println!("Using new listen address {addr}"),
+                            None => println!("Failed to parse listen address {listen_addr}"),
+                        };
+                        parsed
+                    }
+                    None => {
+                        println!(
+                            "Using existing listen address {:?}",
+                            config.get_listen_address()
+                        );
+                        config.get_listen_address()
+                    }
                 };
-                config.set_market_client(bootstrap_peers, private_key, listen_addr).await?;
+                config
+                    .set_market_client(bootstrap_peers, private_key, listen_addr)
+                    .await?;
                 Ok(())
             }
             _ => Err(anyhow!("Invalid subcommand")),

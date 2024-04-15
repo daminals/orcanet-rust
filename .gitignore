@@ -5,3 +5,9 @@ peernode/files/*
 !peernode/files/.gitkeep
 peernode/download/*
 !peernode/download/.gitkeep
+
+peernode-market/private.pem
+peernode-market/private.pk8
+peernode-market/config.json
+peernode-market/peer_id.txt
+

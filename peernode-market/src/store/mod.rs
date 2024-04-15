@@ -4,7 +4,7 @@ use anyhow::Result;
 use config::{Config, File, FileFormat};
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive()]
 pub struct Configurations {
@@ -64,8 +64,10 @@ impl Configurations {
                 tokens: HashMap::new(),
                 port: "8080".to_string(),
                 bootstrap_peers: vec![],
-                listen_addr: Some(Multiaddr::from_str("/ip4/0.0.0.0/tcp/6881").unwrap()),
-                private_key: Some("private_key.pk8".to_owned()),
+                //listen_addr: Some(Multiaddr::from_str("/ip4/0.0.0.0/tcp/6881").unwrap()),
+                listen_addr: None,
+                //private_key: Some("private.pk8".to_owned()),
+                private_key: None,
             },
             http_client: None,
             market_client: None,
@@ -160,7 +162,6 @@ impl Configurations {
     pub fn set_private_key(&mut self, private_key: Option<String>) {
         self.props.private_key = private_key
     }
-
 
     pub fn add_dir(&mut self, file_path: String, price: i64) -> Result<()> {
         // assume that the file_path is a directory
@@ -284,18 +285,36 @@ impl Configurations {
 
     pub async fn get_market_client(&mut self) -> Result<&mut Market> {
         if self.market_client.is_none() {
-            let market_client = Market::new(&self.get_bootstrap_peers(), self.get_private_key(), self.get_listen_address()).await?;
+            let market_client = Market::new(
+                &self.get_bootstrap_peers(),
+                self.get_private_key(),
+                self.get_listen_address(),
+            )
+            .await?;
             self.market_client = Some(market_client);
         }
         let market_client = self.market_client.as_mut().unwrap(); // safe to unwrap because we just set it
         Ok(market_client)
     }
 
-    pub async fn set_market_client(&mut self, bootstrap_peers: Vec<Multiaddr>, private_key: Option<String>, listen_address: Option<Multiaddr>) -> Result<&mut Market> {
+    pub async fn set_market_client(
+        &mut self,
+        bootstrap_peers: Vec<Multiaddr>,
+        private_key: Option<String>,
+        listen_address: Option<Multiaddr>,
+    ) -> Result<&mut Market> {
         self.set_bootstrap_peers(bootstrap_peers);
         self.set_private_key(private_key);
         self.set_listen_address(listen_address);
-        let market_client = Market::new(&self.get_bootstrap_peers(), self.get_private_key(), self.get_listen_address()).await?;
+        if let Some(old_client) = self.market_client.take() {
+            old_client.stop().await?;
+        }
+        let market_client = Market::new(
+            &self.get_bootstrap_peers(),
+            self.get_private_key(),
+            self.get_listen_address(),
+        )
+        .await?;
         self.market_client = Some(market_client);
         Ok(self.market_client.as_mut().unwrap()) // safe to unwrap because we just set it
     }

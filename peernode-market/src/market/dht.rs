@@ -110,6 +110,7 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                     eprintln!("Already dialing {peer_id}");
                 }
             }
+            Some(Command::Terminate) => return,
             None => return,
         },
         // kad network event
@@ -264,6 +265,7 @@ pub enum Command {
         peer_addr: Multiaddr,
         resp: mpsc::Sender<Result<PeerId, PeerId>>,
     },
+    Terminate,
 }
 
 #[derive(Debug, Clone)]
@@ -401,6 +403,12 @@ impl DhtClient {
         } else {
             Ok((tx_kad, handle))
         }
+    }
+    pub async fn stop(self) -> Result<()> {
+        self.tx_kad
+            .send(Command::Terminate)
+            .await
+            .map_err(anyhow::Error::msg)
     }
 
     pub async fn get<T: DhtEntry + DeserializeOwned>(

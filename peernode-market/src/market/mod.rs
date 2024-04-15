@@ -4,7 +4,7 @@ use crate::market::dht::DhtClient;
 
 use std::io::Write;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use libp2p::identity::Keypair;
 use libp2p::Multiaddr;
 use tokio::task::JoinHandle;
@@ -48,7 +48,6 @@ pub struct FileRequest {
 #[derive(Debug)]
 pub struct Market {
     dht_client: DhtClient,
-    #[allow(dead_code)]
     dht_handle: JoinHandle<()>,
 }
 
@@ -59,15 +58,13 @@ impl Market {
         listen_address: Option<Multiaddr>,
     ) -> Result<Self> {
         let id_keys = if let Some(private_key) = private_key {
-            let mut bytes = std::fs::read(private_key).expect("Failed to read private key bytes");
-            let id_keys =
-                Keypair::rsa_from_pkcs8(&mut bytes).expect("Failed to decode private key");
+            let mut bytes = std::fs::read(&private_key)
+                .with_context(|| format!("Failed to read private key '{private_key}' bytes"))?;
+            let id_keys = Keypair::rsa_from_pkcs8(&mut bytes)
+                .with_context(|| format!("Failed to decode private key '{private_key}'"))?;
             println!("Peer Id: {}", id_keys.public().to_peer_id());
-            let mut peer_id_file =
-                std::fs::File::create("peer_id.txt").expect("Failed to create peer id file");
-            peer_id_file
-                .write_all(&id_keys.public().to_peer_id().to_bytes())
-                .expect("Failed to write peer id to file");
+            let mut peer_id_file = std::fs::File::create("peer_id.txt")?;
+            peer_id_file.write_all(&id_keys.public().to_peer_id().to_bytes())?;
             Some(id_keys)
         } else {
             None
@@ -166,6 +163,13 @@ impl Market {
         //market_data.print_holders_map();
 
         Ok(HoldersResponse { holders: users })
+    }
+
+    pub async fn stop(self) -> Result<()> {
+        let res = self.dht_client.stop().await;
+        self.dht_handle.abort();
+        println!("Stopped market client: {res:?}");
+        res
     }
 
     async fn insert_and_validate(&self, file_request: FileRequest) {

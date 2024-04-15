@@ -1,7 +1,7 @@
 pub mod encode;
 pub mod http;
 
-use crate::market::{User, Market};
+use crate::market::{Market, User};
 use anyhow::Result;
 
 use self::http::GetFileResponse;
@@ -35,7 +35,7 @@ pub async fn get_file(
         }
     };
     let mut chunk_num = chunk;
-    let mut return_token = String::from(token);
+    let mut return_token = token;
     loop {
         match get_file_chunk(
             producer_user.clone(),

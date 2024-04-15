@@ -9,7 +9,7 @@ pub fn encode_user(user: &User) -> String {
 }
 
 pub fn decode_user(encoded_user: String) -> Result<User> {
-    let user_str = match general_purpose::STANDARD.decode(&encoded_user) {
+    let user_str = match general_purpose::STANDARD.decode(encoded_user) {
         Ok(user_str) => match String::from_utf8(user_str) {
             Ok(user_str) => user_str,
             Err(_) => {
@@ -24,7 +24,7 @@ pub fn decode_user(encoded_user: String) -> Result<User> {
     match serde_json::from_str(&user_str) {
         Ok(user) => Ok(user),
         Err(_) => {
-            return Err(anyhow::anyhow!("Failed to parse user"));
+            Err(anyhow::anyhow!("Failed to parse user"))
         }
     }
 }
