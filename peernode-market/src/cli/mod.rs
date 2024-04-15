@@ -131,28 +131,31 @@ pub fn cli() -> Command {
                     Command::new("set")
                         .about("Set the options for the market connection")
                         .arg_required_else_help(true)
-                        // how to provide None as an option?
                         .arg(
-                            clap::Arg::new("bootstrap_peers")
+                            clap::Arg::new("BOOTSTRAP_PEERS")
                                 .short('b')
-                                .long("bootstrap_peers")
+                                .long("bootstrap-peers")
                                 .value_name("BOOTSTRAP_PEERS")
                                 .help("The bootstrap nodes to connect to")
                                 .long_help(
 "A space-separated list of Multiaddr for bootstrap nodes to connect to
 e.g. -b /ip4/192.168.0.0.1/tcp/6881/peer_id_hash1 /ip4/127.0.0.2/tcp/6881/peer_id_hash2"
                                 )
-                                .num_args(1..)
+                                // optional
+                                .num_args(0..)
                         )
-                        .arg(arg!(-k --private_key <PRIVATE_KEY> "The optional private key file to use as an id"))
+                        // [PRIVATE_KEY] optional key for not supplying key?
+                        .arg(arg!(PRIVATE_KEY: -k --"private-key" [PRIVATE_KEY] "The optional private key file to use as an id"))
                         .arg(
-                            clap::Arg::new("listen_address")
+                            clap::Arg::new("LISTEN_ADDRESS")
                                 .short('l')
-                                .long("listen_address")
+                                .long("listen-address")
                                 .value_name("LISTEN_ADDRESS")
+                                // could support >1 address, but need to refactor
+                                .num_args(0..=1)
                                 .help("The optional listen address to run a market server on")
                                 .long_help(
-"If this is provided, the market sever will connect to the Kademlia network and serve data.
+"If this is provided, the market server will connect to the Kademlia network and serve data.
 Otherwise, it will run in client mode and only retrieve data from the network.
 The address must be provided as a Multiaddr,
 e.g. /ip4/0.0.0.0/tcp/6881")
@@ -325,7 +328,7 @@ pub async fn handle_arg_matches(
         }
         Some(("market", market_matches)) => match market_matches.subcommand() {
             Some(("set", set_matches)) => {
-                let bootstrap_peers = match set_matches.get_many::<String>("bootstrap_peers") {
+                let bootstrap_peers = match set_matches.get_many::<String>("BOOTSTRAP_PEERS") {
                     Some(bootstrap_peers) => {
                         let parsed_peers: Vec<_> = bootstrap_peers
                             .filter_map(|x| match Multiaddr::from_str(x) {
@@ -347,7 +350,7 @@ pub async fn handle_arg_matches(
                         config.get_bootstrap_peers()
                     }
                 };
-                let private_key = match set_matches.get_one::<String>("private_key") {
+                let private_key = match set_matches.get_one::<String>("PRIVATE_KEY") {
                     Some(private_key) => {
                         println!("Setting market private key to {private_key}");
                         Some(private_key.clone())
@@ -360,14 +363,25 @@ pub async fn handle_arg_matches(
                         config.get_private_key()
                     }
                 };
-                let listen_addr = match set_matches.get_one::<String>("listen_address") {
+                let listen_addr = match set_matches.get_many::<String>("LISTEN_ADDRESS") {
                     Some(listen_addr) => {
-                        let parsed = Multiaddr::from_str(listen_addr).ok();
-                        match parsed {
-                            Some(ref addr) => println!("Using new listen address {addr}"),
-                            None => println!("Failed to parse listen address {listen_addr}"),
-                        };
-                        parsed
+                        let mut parsed_addrs: Vec<_> = listen_addr
+                            .filter_map(|x| match Multiaddr::from_str(x) {
+                                Ok(x) => Some(x),
+                                Err(e) => {
+                                    println!("Failed to parse multiaddr {x}: {e}");
+                                    None
+                                }
+                            })
+                            .take(1)
+                            .collect();
+                        if parsed_addrs.len() == 1 {
+                            println!("Listen address parsed: {:?}", parsed_addrs[0]);
+                            Some(parsed_addrs.remove(0))
+                        } else {
+                            println!("Setting listen address to None");
+                            None
+                        }
                     }
                     None => {
                         println!(
