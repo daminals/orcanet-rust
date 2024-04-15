@@ -5,9 +5,47 @@ use std::time::Instant;
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncWriteExt;
 
+pub struct GetInvoiceResponse {
+    pub token: String,
+    pub invoice: String,
+}
+
 pub enum GetFileResponse {
-    Token(String),
+    InProgress,
     Done,
+}
+
+pub async fn get_invoice(
+    producer: User,
+    file_hash: String,
+) -> Result<GetInvoiceResponse> {
+    let link = format!(
+        "http://{}:{}/invoice/{}",
+        producer.ip, producer.port, file_hash
+    );
+    println!("HTTP: Fetching invoice from {}", link);
+
+    // Fetch the invoice from the producer
+    let client = reqwest::Client::new();
+    let res = client.get(&link).send().await?;
+
+    // Check if the request was successful
+    if !res.status().is_success() {
+        return Err(anyhow!("Request failed with status code: {}", res.status()));
+    }
+
+    // Get auth token header from response
+    let headers = res.headers().clone();
+    let auth_token = headers
+        .get("X-Access-Token")
+        .ok_or(anyhow!("No Authorization header"))?
+        .to_str()?;
+    let invoice = res.text().await?;
+
+    Ok(GetInvoiceResponse {
+        token: auth_token.to_string(),
+        invoice,
+    })
 }
 
 pub async fn get_file_chunk(
@@ -40,14 +78,8 @@ pub async fn get_file_chunk(
         return Err(anyhow!("Request failed with status code: {}", res.status()));
     }
 
-    // Get auth token header from response
-    let headers = res.headers().clone();
-    let auth_token = headers
-        .get("X-Access-Token")
-        .ok_or(anyhow!("No Authorization header"))?
-        .to_str()?;
-
     // Get the file name from the Content-Disposition header
+    let headers = res.headers().clone();
     let content_disposition = headers
         .get("Content-Disposition")
         .ok_or(anyhow!("No Content-Disposition header"))?
@@ -75,5 +107,5 @@ pub async fn get_file_chunk(
         file_name,
         duration.as_millis()
     );
-    Ok(GetFileResponse::Token(auth_token.to_string()))
+    Ok(GetFileResponse::InProgress)
 }

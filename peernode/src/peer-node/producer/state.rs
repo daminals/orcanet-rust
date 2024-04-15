@@ -23,7 +23,7 @@ pub struct Consumer {
     pub token: String,
     pub invoice: String,
     pub price_per_mb: u64,
-    pub data_sent_mb: u64,
+    pub data_sent_mb: f32,
 }
 
 impl AppState {
@@ -86,7 +86,7 @@ impl AppState {
             token: token.clone(),
             invoice,
             price_per_mb: price_per_mb as u64,
-            data_sent_mb: 0,
+            data_sent_mb: 0.0,
         };
         let hash = format!("{}{}", file_hash, token);
         consumers.insert(hash.clone(), consumer.clone());
@@ -114,13 +114,19 @@ impl AppState {
 
         // Check if they've paid enough
         let file = self.get_file_access(file_hash).await?;
-        let chunk_value = consumer.price_per_mb * file.get_chunk_size(chunk).await?;
-        if value_paid < value_sent + chunk_value as f32 {
+        let chunk_size_mb = file.get_chunk_size(chunk).await? as f32 / 1024.0 / 1024.0;
+        let chunk_value = consumer.price_per_mb as f32 * chunk_size_mb;
+        if value_paid < value_sent + chunk_value {
+            println!(
+                "Consumer: Insufficient payment. Paid: {}, Required: {}",
+                value_paid,
+                value_sent + chunk_value as f32
+            );
             return Err(anyhow!("Insufficient payment"));
         }
 
         // Update the amount of data sent
-        consumer.data_sent_mb += file.get_chunk_size(chunk).await? / 1024 / 1024;
+        consumer.data_sent_mb += file.get_chunk_size(chunk).await? as f32 / 1024.0 / 1024.0;
 
         Ok(())
     }

@@ -92,6 +92,12 @@ pub fn cli() -> Command {
                         .arg_required_else_help(true),
                 )
                 .subcommand(
+                    Command::new("request")
+                        .about("Requests an invoice from a producer")
+                        .arg(arg!(<FILE_HASH> "The hash of the file to request").required(true))
+                        .arg(arg!(<PRODUCER> "The producer to request from").required(true)),
+                )
+                .subcommand(
                     Command::new("get")
                         .about("Downloads a file from a producer")
                         .arg(arg!(<FILE_HASH> "The hash of the file to download").required(true))
@@ -263,6 +269,20 @@ pub async fn handle_arg_matches(
                     consumer::list_producers(file_hash, config.get_market()).await?;
                     Ok(())
                 }
+                Some(("request", request_matches)) => {
+                    let file_hash = match request_matches.get_one::<String>("FILE_HASH") {
+                        Some(file_hash) => file_hash.clone(),
+                        None => Err(anyhow!("No file hash provided"))?,
+                    };
+                    let producer = match request_matches.get_one::<String>("PRODUCER") {
+                        Some(producer) => producer.clone(),
+                        None => Err(anyhow!("No producer provided"))?,
+                    };
+                    let res = consumer::get_invoice(producer.clone(), file_hash).await?;
+                    println!("Invoice: {}", res.invoice);
+                    config.set_token(producer, res.token);
+                    Ok(())
+                }
                 Some(("get", get_matches)) => {
                     let file_hash = match get_matches.get_one::<String>("FILE_HASH") {
                         Some(file_hash) => file_hash.clone(),
@@ -281,29 +301,14 @@ pub async fn handle_arg_matches(
                         None => true,
                     };
                     let token = config.get_token(producer.clone());
-                    let ret_token = match consumer::get_file(
+                    consumer::get_file(
                         producer.clone(),
                         file_hash,
                         token,
                         chunk_num,
                         continue_download,
                     )
-                    .await
-                    {
-                        Ok(token) => token,
-                        Err(e) => {
-                            match e.to_string().as_str() {
-                                "Request failed with status code: 404" => {
-                                    println!("Consumer: File downloaded successfully");
-                                }
-                                _ => {
-                                    eprintln!("Failed to download chunk {}: {}", chunk_num, e);
-                                }
-                            };
-                            return Ok(());
-                        }
-                    };
-                    config.set_token(producer, ret_token);
+                    .await?;
                     Ok(())
                 }
                 _ => Err(anyhow!("Invalid subcommand")),

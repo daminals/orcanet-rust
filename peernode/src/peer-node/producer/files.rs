@@ -181,8 +181,10 @@ impl FileAccessType {
         let total_chunks = metadata.len() / Self::CHUNK_SIZE;
         if chunk == total_chunks {
             Ok(metadata.len() % Self::CHUNK_SIZE)
-        } else {
+        } else if chunk < total_chunks {
             Ok(Self::CHUNK_SIZE)
+        } else {
+            Ok(0)
         }
     }
 

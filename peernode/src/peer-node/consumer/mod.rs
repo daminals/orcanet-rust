@@ -4,7 +4,7 @@ pub mod http;
 use crate::grpc::{orcanet::User, MarketClient};
 use anyhow::Result;
 
-use self::http::GetFileResponse;
+use self::http::{GetFileResponse, GetInvoiceResponse};
 
 pub async fn list_producers(file_hash: String, market: String) -> Result<()> {
     let mut client = MarketClient::new(market).await?;
@@ -20,13 +20,24 @@ pub async fn list_producers(file_hash: String, market: String) -> Result<()> {
     Ok(())
 }
 
+pub async fn get_invoice(producer: String, file_hash: String) -> Result<GetInvoiceResponse> {
+    let producer_user = match encode::decode_user(producer.clone()) {
+        Ok(user) => user,
+        Err(e) => {
+            eprintln!("Failed to decode producer: {}", e);
+            return Err(anyhow::anyhow!("Failed to decode producer"));
+        }
+    };
+    return http::get_invoice(producer_user, file_hash).await;
+}
+
 pub async fn get_file(
     producer: String,
     file_hash: String,
     token: String,
     chunk: u64,
     continue_download: bool,
-) -> Result<String> {
+) -> Result<()> {
     let producer_user = match encode::decode_user(producer.clone()) {
         Ok(user) => user,
         Err(e) => {
@@ -35,27 +46,25 @@ pub async fn get_file(
         }
     };
     let mut chunk_num = chunk;
-    let mut return_token = String::from(token);
     loop {
         match get_file_chunk(
             producer_user.clone(),
             file_hash.clone(),
-            return_token.clone(),
+            token.clone(),
             chunk_num,
         )
         .await
         {
             Ok(response) => {
                 match response {
-                    GetFileResponse::Token(new_token) => {
-                        return_token = new_token;
+                    GetFileResponse::InProgress => {
+                        chunk_num += 1;
                     }
                     GetFileResponse::Done => {
                         println!("Consumer: File downloaded successfully");
-                        return Ok(return_token);
+                        return Ok(());
                     }
                 }
-                chunk_num += 1;
             }
             Err(e) => {
                 eprintln!("Failed to download chunk {}: {}", chunk_num, e);
@@ -63,7 +72,7 @@ pub async fn get_file(
             }
         }
         if continue_download == false {
-            return Ok(return_token);
+            return Ok(());
         }
     }
 }
