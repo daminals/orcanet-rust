@@ -73,7 +73,7 @@ impl Market {
         let listen_on = listen_address.zip(id_keys);
 
         let (dht_client, dht_handle) =
-            match DhtClient::spawn_client(&bootstrap_peers, listen_on).await {
+            match DhtClient::spawn_client(bootstrap_peers, listen_on).await {
                 Ok(o) => o,
                 Err(err) => return Err(anyhow!("{err}")),
             };

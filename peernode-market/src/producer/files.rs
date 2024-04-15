@@ -30,13 +30,6 @@ pub fn hash_file(file: &mut File) -> Result<String> {
 }
 #[allow(dead_code)]
 impl FileMap {
-    pub fn default() -> Self {
-        FileMap {
-            files: RwLock::new(HashMap::new()),
-            prices: RwLock::new(HashMap::new()),
-        }
-    }
-
     pub fn new(files: HashMap<String, PathBuf>, prices: HashMap<String, i64>) -> Self {
         FileMap {
             files: RwLock::new(files),
@@ -134,6 +127,14 @@ impl FileMap {
         let prices = self.prices.read().await;
 
         prices.clone()
+    }
+}
+impl Default for FileMap {
+    fn default() -> Self {
+        FileMap {
+            files: RwLock::new(HashMap::new()),
+            prices: RwLock::new(HashMap::new()),
+        }
     }
 }
 

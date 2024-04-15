@@ -154,7 +154,7 @@ pub async fn handle_arg_matches(
                         None => config.get_port(),
                     };
                     let market_client = config.get_market_client().await?;
-                    let ip = register_matches.get_one::<String>("IP").map(|ip| ip.clone());
+                    let ip = register_matches.get_one::<String>("IP").cloned();
                     // let market_client = config.get_market_client().await?;
                     producer::register_files(prices, market_client, port.clone(), ip).await?;
                     config.start_http_client(port).await;

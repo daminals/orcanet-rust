@@ -107,7 +107,7 @@ async fn handle_file_request(
     };
 
     // Create a new FileAccessType, which will open the file and allow us to read chunks
-    let file = match FileAccessType::new(&file_path.to_string_lossy().to_string()) {
+    let file = match FileAccessType::new(file_path.to_string_lossy().as_ref()) {
         Ok(file) => file,
         Err(_) => {
             eprintln!("Failed to open file {:?}", file_path);

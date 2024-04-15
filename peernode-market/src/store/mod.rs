@@ -73,7 +73,7 @@ impl Configurations {
             market_client: None,
         };
         default.write();
-        return default;
+        default
     }
 
     pub fn write(&self) {
@@ -82,9 +82,7 @@ impl Configurations {
             Ok(default_config_json) => {
                 // Write the string to the file.
                 match std::fs::write("config.json", default_config_json) {
-                    Ok(_) => {
-                        return;
-                    }
+                    Ok(_) => {}
                     Err(_) => {
                         eprintln!("Failed to write to file");
                     }
@@ -247,10 +245,7 @@ impl Configurations {
     }
 
     pub fn is_http_running(&self) -> bool {
-        if self.http_client.is_some() {
-            return true;
-        }
-        return false;
+        self.http_client.is_some()
     }
 
     pub async fn start_http_client(&mut self, port: String) {

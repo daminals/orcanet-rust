@@ -62,7 +62,7 @@ pub async fn get_file(
                 return Err(anyhow::anyhow!("Failed to download chunk"));
             }
         }
-        if continue_download == false {
+        if !continue_download {
             return Ok(return_token);
         }
     }
@@ -74,7 +74,7 @@ pub async fn get_file_chunk(
     token: String,
     chunk: u64,
 ) -> Result<GetFileResponse> {
-    return http::get_file_chunk(producer, file_hash.clone(), token, chunk).await;
+    http::get_file_chunk(producer, file_hash.clone(), token, chunk).await
 }
 
 // pub async fn upload_file(file_path: String, market: String) -> Result<()> {
