@@ -1,4 +1,4 @@
-use crate::grpc::orcanet::User;
+use crate::market::User;
 use anyhow::Result;
 use base64::{engine::general_purpose, Engine as _};
 

@@ -22,8 +22,8 @@ COPY peernode/src src
 
 # Build the project with caching
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/peernode/target \
-    cargo build --release && \
+	--mount=type=cache,target=/peernode/target \
+	cargo build --release && \
     cp ./target/release/peer-node ./peer-node
 
 # Runner image

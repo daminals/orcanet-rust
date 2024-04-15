@@ -5,6 +5,3 @@ peernode/files/*
 !peernode/files/.gitkeep
 peernode/download/*
 !peernode/download/.gitkeep
-
-market/private.pem
-market/private.pk8
