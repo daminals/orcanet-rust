@@ -9,7 +9,6 @@ use crate::market::market::Market;
 use anyhow::{anyhow, Result};
 use libp2p::Multiaddr;
 
-
 pub async fn run(
     bootstrap_peers: &[Multiaddr],
     private_key: Option<String>,
@@ -17,7 +16,7 @@ pub async fn run(
     ip: Option<String>,
     port: Option<u16>,
 ) -> Result<()> {
-    let mut client = Market::new(bootstrap_peers, private_key, listen_address).await;
+    let mut client = Market::new(bootstrap_peers, private_key, listen_address).await?;
 
     // Load the files
     let file_map = Arc::new(files::FileMap::new());

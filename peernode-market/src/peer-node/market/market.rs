@@ -3,11 +3,9 @@ use crate::market::*;
 
 use std::io::Write;
 
+use anyhow::{anyhow, Result};
 use libp2p::identity::Keypair;
 use libp2p::Multiaddr;
-
-use tonic::{Response, Status};
-
 use tokio::task::JoinHandle;
 
 #[derive(Debug)]
@@ -22,7 +20,7 @@ impl Market {
         bootstrap_peers: &[Multiaddr],
         private_key: Option<String>,
         listen_address: Option<Multiaddr>,
-    ) -> Self {
+    ) -> Result<Self> {
         let id_keys = if let Some(private_key) = private_key {
             let mut bytes = std::fs::read(private_key).expect("Failed to read private key bytes");
             let id_keys =
@@ -43,14 +41,14 @@ impl Market {
         let (dht_client, dht_handle) =
             match DhtClient::spawn_client(&bootstrap_peers, listen_on).await {
                 Ok(o) => o,
-                Err(err) => panic!("{err}"),
+                Err(err) => return Err(anyhow!("{err}")),
             };
         //dht_handle.await?
 
-        Self {
+        Ok(Self {
             dht_client,
             dht_handle,
-        }
+        })
     }
 
     // Register a new producer
@@ -62,7 +60,7 @@ impl Market {
         port: i32,
         price: i64,
         file_hash: String,
-    ) -> Result<Response<()>, Status> {
+    ) -> Result<()> {
         let user = User {
             id,
             name,
@@ -78,15 +76,11 @@ impl Market {
         };
         // insert the file request into the market data and validate the holders
         self.insert_and_validate(file_request).await;
-        Ok(Response::new(()))
+        Ok(())
     }
 
     // Get a list of producers for a given file hash
-    pub async fn check_holders(
-        &self,
-        file_hash: String,
-    ) -> Result<HoldersResponse, Status> {
-
+    pub async fn check_holders(&self, file_hash: String) -> Result<HoldersResponse> {
         let now = get_current_time();
 
         let mut users = vec![];
