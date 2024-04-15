@@ -6,13 +6,5 @@ peernode/files/*
 peernode/download/*
 !peernode/download/.gitkeep
 
-.DS_Store
-
-
-**/.DS_Store
-target
-peernode/files/*
-!peernode/files/.gitkeep
-peernode/download/*
-!peernode/download/.gitkeep
-peernode/config.json
+market/private.pem
+market/private.pk8
