@@ -64,7 +64,7 @@ impl Market {
                 .with_context(|| format!("Failed to decode private key '{private_key}'"))?;
             println!("Peer Id: {}", id_keys.public().to_peer_id());
             let mut peer_id_file = std::fs::File::create("peer_id.txt")?;
-            peer_id_file.write_all(&id_keys.public().to_peer_id().to_bytes())?;
+            peer_id_file.write_all(format!("{}", id_keys.public().to_peer_id()).as_bytes())?;
             Some(id_keys)
         } else {
             None

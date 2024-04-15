@@ -131,7 +131,14 @@ pub fn cli() -> Command {
                     Command::new("set")
                         .about("Set the options for the market connection")
                         .arg_required_else_help(true)
-                        .arg(arg!(-b --bootstrap_peers <BOOTSTRAP_PEERS> "The bootstrap nodes to connect to"))
+                        .arg(
+                            clap::Arg::new("bootstrap_peers")
+                                .short('b')
+                                .long("bootstrap_peers")
+                                .value_name("BOOTSTRAP_PEERS")
+                                .help("The bootstrap nodes to connect to")
+                                .num_args(1..)
+                        )
                         .arg(arg!(-k --private_key <PRIVATE_KEY> "The optional private key file to use as an id"))
                         .arg(arg!(-l --listen_address <LISTEN_ADDRESS> "The optional listen address to run a market server on"))
                 ),
