@@ -1,9 +1,8 @@
 use crate::market::dht_entry::*;
 use crate::market::*;
-use crate::*;
 
+use anyhow::{anyhow, Result};
 use std::collections::{hash_map, HashMap};
-use std::error::Error;
 use std::time::Duration;
 
 use libp2p::futures::StreamExt;
@@ -127,6 +126,8 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                     let namespace = sp.next().unwrap();
                     if namespace == Vec::<FileRequest>::key_namespace().as_bytes() {
                         update_entry::<Vec<FileRequest>>(&mut swarm, record);
+                    } else if namespace == ProvidedFiles::key_namespace().as_bytes() {
+                        update_entry::<ProvidedFiles>(&mut swarm, record);
                     } else {
                         eprintln!("Unknown key namespace {:?}", std::str::from_utf8(namespace));
                     }
@@ -276,7 +277,7 @@ impl DhtClient {
     pub async fn spawn_client(
         bootstrap_peers: &[Multiaddr],
         listen_on: Option<(Multiaddr, Keypair)>,
-    ) -> Result<(Self, JoinHandle<()>), Box<dyn Error>> {
+    ) -> Result<(Self, JoinHandle<()>)> {
         // build swarm
         let mut swarm = match listen_on {
             Some((_, ref id_keys)) => libp2p::SwarmBuilder::with_existing_identity(id_keys.clone()),
@@ -334,7 +335,7 @@ impl DhtClient {
     async fn try_bootstrap(
         mut swarm: Swarm<Behaviour>,
         bootstrap_peers: &[Multiaddr],
-    ) -> Result<(mpsc::Sender<Command>, JoinHandle<()>), Box<dyn Error>> {
+    ) -> Result<(mpsc::Sender<Command>, JoinHandle<()>)> {
         // communication with swarm gets handled through these channels
         let (tx_kad, rx_kad) = mpsc::channel(256);
 
@@ -343,7 +344,7 @@ impl DhtClient {
 
         for peer_addr in bootstrap_peers {
             let Some(Protocol::P2p(peer_id)) = peer_addr.iter().last() else {
-                return Err("Expect peer multiaddr to contain peer ID.".into());
+                return Err(anyhow!("Expect peer multiaddr to contain peer ID."));
             };
             eprintln!("Attempting to bootstrap with {peer_addr}");
             swarm
@@ -390,13 +391,13 @@ impl DhtClient {
                     Some(Err(peer_id)) => {
                         eprintln!("Failed to dial {peer_id}");
                     },
-                    None => return Err("Failed to receive dial result message".into()),
+                    None => return Err(anyhow!("Failed to receive dial result message")),
                 }
             }
         }
 
         if !connected_to_some {
-            Err("Dialing bootstrap peers failed".into())
+            Err(anyhow!("Dialing bootstrap peers failed"))
         } else {
             Ok((tx_kad, handle))
         }

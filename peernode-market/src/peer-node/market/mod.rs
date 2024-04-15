@@ -17,7 +17,6 @@ pub fn get_current_time() -> u64 {
     since_the_epoch.as_secs()
 }
 
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
     pub id: String,
@@ -31,7 +30,6 @@ pub struct User {
 pub struct HoldersResponse {
     pub holders: Vec<User>,
 }
-
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileRequest {

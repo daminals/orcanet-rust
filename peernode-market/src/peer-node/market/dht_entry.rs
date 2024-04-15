@@ -59,7 +59,7 @@ impl DhtEntry for Vec<FileRequest> {
 }
 
 // set of all file hashes being provided
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ProvidedFiles(pub HashSet<String>);
 
 impl DhtEntry for ProvidedFiles {

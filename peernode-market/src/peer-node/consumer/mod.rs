@@ -11,7 +11,7 @@ pub async fn run(
     listen_address: Option<Multiaddr>,
     file_hash: String,
 ) -> Result<()> {
-    let client = Market::new(bootstrap_peers, private_key, listen_address).await;
+    let client = Market::new(bootstrap_peers, private_key, listen_address).await?;
 
     // Check the producers for the file
     println!("Consumer: Checking producers for file hash {}", file_hash);

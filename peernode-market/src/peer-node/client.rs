@@ -60,13 +60,7 @@ async fn main() -> Result<()> {
         }
         false => match args.file_hash {
             Some(file_hash) => {
-                consumer::run(
-                    &args.bootstrap_peers,
-                    args.private_key,
-                    None,
-                    file_hash,
-                )
-                .await?
+                consumer::run(&args.bootstrap_peers, args.private_key, None, file_hash).await?
             }
             None => return Err(anyhow!("No file hash provided")),
         },
