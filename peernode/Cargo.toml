@@ -8,6 +8,10 @@ edition = "2021"
 name = "peer-node"
 path = "src/peer-node/client.rs"
 
+[[bin]] # Bin to run the http server
+name = "peer-node-server"
+path = "src/peer-node/server.rs"
+
 [dependencies]
 tonic = "0.11"
 prost = "0.12"

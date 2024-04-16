@@ -34,6 +34,7 @@ async fn handle_file_request(
     headers: HeaderMap,
 ) -> Response {
     // Obtain file hash, chunk, and consumer address
+    
     let hash = params.0;
     let chunk = query.chunk.unwrap_or(0);
     let address = connect_info.0.ip().to_string();
