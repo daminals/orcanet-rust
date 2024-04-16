@@ -12,24 +12,27 @@ The `setup.sh` script provided should install dependencies and build the project
 
    (May require more a [more recent version](https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os))
 
-## API
-Detailed gRPC endpoints are in `proto/market.proto`
+## Dht API
 
-- Holders of a file can register the file using the RegisterFile RPC.
-  - Provide a User with 5 fields: 
-    - `id`: some string to identify the user.
-    - `name`: a human-readable string to identify the user
-    - `ip`: a string of the public ip address
-    - `port`: an int32 of the port
-    - `price`: an int64 that details the price per mb of outgoing files
-  - Provide a fileHash string that is the hash of the file
-  - Returns nothing
+- The market stores file metadata in a FileMetadata struct, with key
+  `FileMetadata/{file_hash}`
+  - `file_hash`: the SHA-256 hash of the file contents
+  - `chunk`: `Vec<(String, u64)>` a list of file hashes and sizes for each chunk
+  of the file
+  - `suppliers`: `Vec<(User, u64)>`: a list of users supplying the file and their
+  expiration times
+- `User`
+  - `id`: some string to identify the user.
+  - `name`: a human-readable string to identify the user
+  - `ip`: a string of the public ip address
+  - `port`: an int32 of the port
+  - `price`: an int64 that details the price per mb of outgoing files
 
 - Then, clients can search for holders using the CheckHolders RPC
   - Provide a fileHash to identify the file to search for
   - Returns a list of Users that hold the file.
 
-## Running with Docker
+## Running with Docker (Deprecated)
 
 We provide a Docker compose file to easily run the producer and market server
 together. To run it:
@@ -72,16 +75,14 @@ cargo run consumer ls <FILE_HASH>
 cargo run consumer get <FILE_HASH> <CHOSEN_PRODUCER>
 ```
 
-### Market Server
+## CLI Interface
 
-The market server has been merged into the peer node application.
-Parameters need to be provided to get the server to work with the Kademlia network.
-The `dht_client` binary will only run the Kademlia node.
+Todo
 
-#### Parameters
+### Market Connection
 
-The `dht_client` binary requires these parameters to configure the
-Kademlia node running on the application.
+The peer node requires its market to be configured in order to query the network
+or share data.
 
 * `bootstrap-peers`
   * Space separated list of Multiaddr peer nodes to connect to in order to
@@ -97,18 +98,25 @@ Kademlia node running on the application.
   and not provide data).
 * `listen-address`
   * Multiaddr that the application will listen on to act as a Kademlia server node.
+
+```shell
+market set -b /ip4/{ip_address}/tcp/6881/{peer_id_hash} -k private.pk8 -l /ip4/0.0.0.0/tcp/6881
+```
+
+## Market Server
+
+The `dht_client` binary will only run the Kademlia node.
+
+### Parameters
+
+The `dht_client` binary requires these parameters to configure the
+Kademlia node running on the application.
+
+* `bootstrap-peers`
+* `private-key`
+* `listen-address`
   * By default, *if `private-key` is provided*, the node will listen on
   `/ip4/0.0.0.0/tcp/6881`
-
-#### Connect to existing network
-
-To connect to an existing Kademlia network, provide the `bootstrap-peers` parameter
-with a space separated list of Multiaddrs. `private-key` and `listen-address`
-can optionally be provided to have the node also serve data to the network.
-
-```Shell
-cargo run -- --bootstrap-peers /ip4/{ip_addr}/tcp/{port}/p2p/{peer id} ...
-```
 
 #### Start a new Kademlia network
 
@@ -121,8 +129,8 @@ openssl pkcs8 -in private.pem -inform PEM -topk8 -out private.pk8 -outform DER -
 rm private.pem      # optional
 ```
 
-Then run either the market server or `dht_client` with both the `private-key`
-and `listen-address` parameters provided.
+Then run the peer node or `dht_client` with both the `private-key` and
+`listen-address` parameters provided.
 
 ```Shell
 cargo run -- --private-key private.pk8 --listen-address /ip4/0.0.0.0/tcp/6881
