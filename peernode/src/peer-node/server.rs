@@ -11,28 +11,40 @@ use axum::{
     routing::{get, post},
     Router,
 };
-
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 struct FileParams {
-    chunk: Option<u64>,
+    chunk: String,
     producer: String,
-    continue_download: bool,
+    continue_download: String,
 }
 
-// GetFile - Fetches a file from a given hash/CID.
+
 async fn get_file(
     // Path(hash): Path<String>,
     params: Path<String>,
     query: Query<FileParams>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, &'static str> {
     let mut config = store::Configurations::new().await;
     let hash = params.0;
     let producer = query.producer.clone();
-    let continue_download = query.continue_download;
+    let continue_download = match query.continue_download.clone().to_lowercase().as_str() {
+        "true" => true,
+        "false" => false,
+        _ => {
+            // Return an error if the string is neither "true" nor "false"
+            return Err("Invalid value for continue_download");
+        }
+    };
     let token = config.get_token(producer.to_string());
-    let chunk_num = query.chunk.unwrap_or(0);
+    let chunk_num = match query.chunk.clone().parse::<u64>() {
+        Ok(chunk_num) => chunk_num,
+        Err(_) => {
+            // Return an error if parsing fails
+            return Err("Invalid chunk number");
+        }
+    };
 
     let ret_token = match consumer::get_file(
         producer.to_string(),
@@ -45,7 +57,9 @@ async fn get_file(
     {
         Ok(new_token) => new_token,
         Err(_) => {
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response();
+            return Ok(
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response(),
+            );
         }
     };
 
@@ -53,15 +67,18 @@ async fn get_file(
     config.set_token(producer.to_string(), ret_token.clone());
 
     // Build and return the response
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(format!(
-            "{{\"hash\": \"{}\", \"token\": \"{}\"}}",
-            hash, ret_token
-        )))
-        .unwrap()
+    Ok(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(format!(
+                "{{\"hash\": \"{}\", \"token\": \"{}\"}}",
+                hash, ret_token
+            )))
+            .unwrap(),
+    )
 }
+
 
 // GetFileInfo - Fetches files info from a given hash/CID. Should return name, size, # of peers, whatever other info you can give.
 async fn get_file_info(query: Query<FileParams>) -> impl IntoResponse {
@@ -97,7 +114,7 @@ async fn get_file_info(query: Query<FileParams>) -> impl IntoResponse {
 // TODO: Implement this function-- we still do not know how to handle file uploads
 // }
 
-// DeleteFile - Deletes a file from the configurations (deleting from server not possible)
+// DeleteFile - Deletes a file from the configurations
 async fn delete_file(Path(hash): Path<String>) -> impl IntoResponse {
     let mut config = store::Configurations::new().await;
     config.remove_file(hash.clone());
@@ -105,16 +122,19 @@ async fn delete_file(Path(hash): Path<String>) -> impl IntoResponse {
         .status(StatusCode::OK)
         .body(Body::from(format!("{{\"hash\": \"{}\"}}", hash)))
         .unwrap()
-
 }
-
 
 // Main function to setup and run the server
 #[tokio::main]
 async fn main() {
-    let _app = Router::<StatusCode>::new()
+    let app = Router::new()
         .route("/file/:hash", get(get_file))
         .route("/file/:hash/info", get(get_file_info))
         .route("/file/:hash", post(delete_file));
-}
 
+    // Start the server
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
+}
