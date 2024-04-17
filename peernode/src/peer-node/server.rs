@@ -20,7 +20,6 @@ struct FileParams {
     continue_download: String,
 }
 
-
 async fn get_file(
     // Path(hash): Path<String>,
     params: Path<String>,
@@ -57,9 +56,7 @@ async fn get_file(
     {
         Ok(new_token) => new_token,
         Err(_) => {
-            return Ok(
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response(),
-            );
+            return Ok((StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response());
         }
     };
 
@@ -67,18 +64,15 @@ async fn get_file(
     config.set_token(producer.to_string(), ret_token.clone());
 
     // Build and return the response
-    Ok(
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(format!(
-                "{{\"hash\": \"{}\", \"token\": \"{}\"}}",
-                hash, ret_token
-            )))
-            .unwrap(),
-    )
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(format!(
+            "{{\"hash\": \"{}\", \"token\": \"{}\"}}",
+            hash, ret_token
+        )))
+        .unwrap())
 }
-
 
 // GetFileInfo - Fetches files info from a given hash/CID. Should return name, size, # of peers, whatever other info you can give.
 async fn get_file_info(query: Query<FileParams>) -> impl IntoResponse {
