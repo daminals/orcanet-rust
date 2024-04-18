@@ -107,8 +107,13 @@ impl Market {
         };
 
         // insert the file request into the market data and validate the holders
-        self.insert_and_validate(file_hash, user, get_current_time() + EXPIRATION_OFFSET)
-            .await;
+        self.insert_and_validate(
+            file_hash,
+            user,
+            chunk_metadata,
+            get_current_time() + EXPIRATION_OFFSET
+        ).await;
+
         Ok(())
     }
 
@@ -170,14 +175,14 @@ impl Market {
         res
     }
 
-    async fn insert_and_validate(&self, hash: String, user: User, expiration: u64) {
+    async fn insert_and_validate(&self, hash: String, user: User, chunk_metadata: Vec<(String, u64)>, expiration: u64) {
         let Ok(file_metadata) = self.dht_client.get::<FileMetadata>(&hash).await else {
             eprintln!("Failed to fetch file requests from Kad");
             return;
         };
         let mut file_metadata = file_metadata.unwrap_or(FileMetadata {
             file_hash: hash.clone(),
-            chunk: vec![],
+            chunk: chunk_metadata,
             suppliers: vec![],
         });
         let current_time = get_current_time();
