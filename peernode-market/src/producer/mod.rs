@@ -31,6 +31,7 @@ pub async fn stop_server(join_handle: tokio::task::JoinHandle<()>) -> Result<()>
 
 pub async fn register_files(
     prices: HashMap<String, i64>,
+    chunk_metadatas: HashMap<String, Vec<(String, u64)>>,
     client: &mut Market,
     port: String,
     ip: Option<String>,
@@ -70,6 +71,14 @@ pub async fn register_files(
             "Producer: Registering file with hash {} and price {}",
             hash, price
         );
+        let chunk_metadata = match chunk_metadatas.get(&hash) {
+            Some(chunk_metadata) => chunk_metadata.clone(),
+            None => {
+                eprintln!("Producer: No chunk metadata provided for file with hash {}", hash);
+                continue;
+            }
+        };
+
         client
             .register_file(
                 producer_id.clone(),
@@ -78,8 +87,7 @@ pub async fn register_files(
                 port,
                 price,
                 hash,
-                
-                vec![] // todo: chunk metadata
+                chunk_metadata
             )
             .await?;
     }

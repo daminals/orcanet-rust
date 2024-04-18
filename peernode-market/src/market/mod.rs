@@ -96,7 +96,6 @@ impl Market {
         port: i32,
         price: i64,
         file_hash: String,
-        
         chunk_metadata: Vec<(String, u64)>,
     ) -> Result<()> {
         let user = User {
