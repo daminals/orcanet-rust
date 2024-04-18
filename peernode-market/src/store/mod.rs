@@ -18,6 +18,7 @@ pub struct Properties {
     name: String,
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
+    chunk_metadatas: HashMap<String, Vec<(String, u64)>>,
     tokens: HashMap<String, String>,
     port: String,
     // market config
@@ -61,6 +62,7 @@ impl Configurations {
                 name: "default".to_string(),
                 files: HashMap::new(),
                 prices: HashMap::new(),
+                chunk_metadatas: HashMap::new(),
                 tokens: HashMap::new(),
                 port: "8080".to_string(),
                 bootstrap_peers: vec![],
@@ -102,12 +104,24 @@ impl Configurations {
         Ok(hash)
     }
 
+    pub fn get_chunk_metadata(&self, file_path: String) -> Result<Vec<(String, u64)>> {
+        // open the file
+        let mut file = std::fs::File::open(file_path)?;
+        // chunk metadata the file
+        let chunk_metadata = producer::files::generate_chunk_metadata(&mut file)?;
+        Ok(chunk_metadata)
+    }
+
     pub fn get_files(&self) -> HashMap<String, PathBuf> {
         self.props.files.clone()
     }
 
     pub fn get_prices(&self) -> HashMap<String, i64> {
         self.props.prices.clone()
+    }
+
+    pub fn get_chunk_metadatas(&self) -> HashMap<String, Vec<(String, u64)>> {
+        self.props.chunk_metadatas.clone()
     }
 
     pub fn get_port(&self) -> String {
@@ -194,8 +208,17 @@ impl Configurations {
             }
         };
 
+        // get the file's chunk metadata
+        let chunk_metadata = match self.get_chunk_metadata(file.clone()) {
+            Ok(chunk_metadata) => chunk_metadata,
+            Err(_) => {
+                panic!("Failed to get chunk metadata");
+            }
+        };    
+
         self.props.files.insert(hash.clone(), PathBuf::from(file));
-        self.props.prices.insert(hash, price);
+        self.props.prices.insert(hash.clone(), price);
+        self.props.chunk_metadatas.insert(hash, chunk_metadata);
         // self.write();
     }
 

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -28,6 +29,26 @@ pub fn hash_file(file: &mut File) -> Result<String> {
     let hash = format!("{:x}", hash);
     Ok(hash)
 }
+
+pub fn generate_chunk_metadata(file: &mut File) -> Result<Vec<(String, u64)>> {
+    let mut chunk_metadata = vec![];
+    
+    let mut sha256 = Sha256::new();
+    let mut buffer = vec![0; FileAccessType::CHUNK_SIZE as usize];
+    
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        sha256.update(&buffer[..bytes_read]);
+        let hash = format!("{:x}", sha256.clone().finalize());
+        chunk_metadata.push((hash, bytes_read as u64));
+    }
+
+    Ok(chunk_metadata)
+}
+
 #[allow(dead_code)]
 impl FileMap {
     pub fn new(files: HashMap<String, PathBuf>, prices: HashMap<String, i64>) -> Self {
