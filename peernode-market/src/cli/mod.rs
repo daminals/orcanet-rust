@@ -188,7 +188,14 @@ pub async fn handle_arg_matches(
                     let market_client = config.get_market_client().await?;
                     let ip = register_matches.get_one::<String>("IP").cloned();
                     // let market_client = config.get_market_client().await?;
-                    producer::register_files(prices, chunk_metadatas, market_client, port.clone(), ip).await?;
+                    producer::register_files(
+                        prices,
+                        chunk_metadatas,
+                        market_client,
+                        port.clone(),
+                        ip,
+                    )
+                    .await?;
                     config.start_http_client(port).await;
                     Ok(())
                 }

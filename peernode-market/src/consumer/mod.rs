@@ -11,7 +11,7 @@ pub async fn list_producers(file_hash: String, client: &mut Market) -> Result<()
         Some(producers) => producers,
         None => {
             println!("No producers for file {file_hash}");
-            return Ok(())
+            return Ok(());
         }
     };
     for producer in producers.holders {

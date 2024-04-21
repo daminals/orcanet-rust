@@ -28,9 +28,11 @@ impl DhtEntry for FileMetadata {
             return cur;
         }
 
-
-        let mut merged_ids: HashMap<String, (User, u64)> =
-            cur.suppliers.iter().map(|x| (x.0.id.clone(), x.clone())).collect();
+        let mut merged_ids: HashMap<String, (User, u64)> = cur
+            .suppliers
+            .iter()
+            .map(|x| (x.0.id.clone(), x.clone()))
+            .collect();
 
         let now = get_current_time();
 

@@ -47,7 +47,12 @@ where
     let cur_values: T = match cur {
         Some(cur) => serde_json::from_str(std::str::from_utf8(&cur.value).unwrap()).unwrap(),
         None => {
-            return swarm.behaviour_mut().kademlia.store_mut().put(record).map_err(anyhow::Error::from);
+            return swarm
+                .behaviour_mut()
+                .kademlia
+                .store_mut()
+                .put(record)
+                .map_err(anyhow::Error::from);
         }
     };
     let new_values: T = serde_json::from_str(std::str::from_utf8(&record.value).unwrap()).unwrap();
@@ -462,9 +467,7 @@ impl DhtClient {
     pub async fn set_requests(&self, key: &str, requests: FileMetadata) -> Result<(), Status> {
         self.set::<ProvidedFiles>(
             "all_files",
-            ProvidedFiles(
-                HashSet::from([requests.file_hash.clone()])
-            ),
+            ProvidedFiles(HashSet::from([requests.file_hash.clone()])),
         )
         .await?;
         self.set::<FileMetadata>(key, requests).await

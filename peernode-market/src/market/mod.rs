@@ -111,8 +111,9 @@ impl Market {
             file_hash,
             user,
             chunk_metadata,
-            get_current_time() + EXPIRATION_OFFSET
-        ).await;
+            get_current_time() + EXPIRATION_OFFSET,
+        )
+        .await;
 
         Ok(())
     }
@@ -175,7 +176,13 @@ impl Market {
         res
     }
 
-    async fn insert_and_validate(&self, hash: String, user: User, chunk_metadata: Vec<(String, u64)>, expiration: u64) {
+    async fn insert_and_validate(
+        &self,
+        hash: String,
+        user: User,
+        chunk_metadata: Vec<(String, u64)>,
+        expiration: u64,
+    ) {
         let Ok(file_metadata) = self.dht_client.get::<FileMetadata>(&hash).await else {
             eprintln!("Failed to fetch file requests from Kad");
             return;

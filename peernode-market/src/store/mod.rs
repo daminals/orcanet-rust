@@ -218,7 +218,7 @@ impl Configurations {
             Err(_) => {
                 panic!("Failed to get chunk metadata");
             }
-        };    
+        };
 
         self.props.files.insert(hash.clone(), PathBuf::from(file));
         self.props.prices.insert(hash.clone(), price);

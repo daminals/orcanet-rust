@@ -32,10 +32,10 @@ pub fn hash_file(file: &mut File) -> Result<String> {
 
 pub fn generate_chunk_metadata(file: &mut File) -> Result<Vec<(String, u64)>> {
     let mut chunk_metadata = vec![];
-    
+
     let mut sha256 = Sha256::new();
     let mut buffer = vec![0; FileAccessType::CHUNK_SIZE as usize];
-    
+
     loop {
         let bytes_read = file.read(&mut buffer)?;
         if bytes_read == 0 {

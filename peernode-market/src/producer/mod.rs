@@ -74,7 +74,10 @@ pub async fn register_files(
         let chunk_metadata = match chunk_metadatas.get(&hash) {
             Some(chunk_metadata) => chunk_metadata.clone(),
             None => {
-                eprintln!("Producer: No chunk metadata provided for file with hash {}", hash);
+                eprintln!(
+                    "Producer: No chunk metadata provided for file with hash {}",
+                    hash
+                );
                 continue;
             }
         };
@@ -87,7 +90,7 @@ pub async fn register_files(
                 port,
                 price,
                 hash,
-                chunk_metadata
+                chunk_metadata,
             )
             .await?;
     }
