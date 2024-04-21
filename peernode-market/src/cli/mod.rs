@@ -12,6 +12,7 @@ use store::Configurations;
 #[cfg(test)]
 mod tests;
 
+// Create a CLI command with several subcommands to encapsulate the different functionalities of the peer node
 pub fn cli() -> Command {
     Command::new("peernode")
         .about("Orcanet Peernode CLI")
@@ -36,7 +37,8 @@ pub fn cli() -> Command {
                         .arg(
                             arg!(<IP> "The public IP address to announce")
                                 .required(false)
-                                .short('i'),
+                                .short('i')
+                                .long("ip"),
                         ),
                 )
                 .subcommand(
@@ -165,11 +167,14 @@ e.g. /ip4/0.0.0.0/tcp/6881")
         .subcommand(Command::new("exit").about("Exits the CLI"))
 }
 
+// Handle the different subcommands of the CLI and execute the appropriate functions
 pub async fn handle_arg_matches(
     matches: clap::ArgMatches,
     config: &mut Configurations,
 ) -> Result<()> {
+    // take in result to pass up and print errors to user directly
     match matches.subcommand() {
+        // match subcommands, get the inputs, and execute the appropriate functions
         Some(("producer", producer_matches)) => {
             match producer_matches.subcommand() {
                 Some(("register", register_matches)) => {
@@ -281,6 +286,7 @@ pub async fn handle_arg_matches(
                     consumer::list_producers(file_hash, market_client).await?;
                     Ok(())
                 }
+                // get file from producer
                 Some(("get", get_matches)) => {
                     let file_hash = match get_matches.get_one::<String>("FILE_HASH") {
                         Some(file_hash) => file_hash.clone(),

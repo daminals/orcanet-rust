@@ -8,6 +8,7 @@ use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive()]
 pub struct Configurations {
+    // this is the struct that will be used to store the configurations
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
     market_client: Option<Market>,
@@ -15,6 +16,7 @@ pub struct Configurations {
 
 #[derive(Serialize, Deserialize)]
 pub struct Properties {
+    // must be a separate serializable struct so can read from config.json file
     name: String,
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
@@ -28,10 +30,10 @@ pub struct Properties {
     // wallet: String, // not sure about implementation details, will revisit later
 }
 
+// TODO: Put prices and path attached to the same hash in config file, and then construct the hashmaps from that
 impl Configurations {
     pub async fn new() -> Self {
         let config = Config::builder()
-            // .set_default("market", "localhost:50051")?
             .add_source(File::new("config", FileFormat::Json))
             .build();
         let props = match config {
@@ -57,6 +59,7 @@ impl Configurations {
     }
 
     pub async fn default() -> Self {
+        // this is the default configuration
         let default = Configurations {
             props: Properties {
                 name: "default".to_string(),
@@ -78,6 +81,7 @@ impl Configurations {
         default
     }
 
+    // write to config.json
     pub fn write(&self) {
         // Serialize it to a JSON string.
         match serde_json::to_string(&self.props) {
@@ -175,10 +179,9 @@ impl Configurations {
         self.props.private_key = private_key
     }
 
+    // add every file in the directory to the list
     pub fn add_dir(&mut self, file_path: String, price: i64) -> Result<()> {
         // assume that the file_path is a directory
-        // let dir_name = file_path.clone() + "/**/*";
-        // get all the files in the directory
         for entry in fs::read_dir(file_path)? {
             let path = entry?.path();
             // convert the path to a string
@@ -199,6 +202,7 @@ impl Configurations {
         Ok(())
     }
 
+    // add a single file to the list
     pub fn add_file(&mut self, file: String, price: i64) {
         // hash the file
         let hash = match self.get_hash(file.clone()) {
@@ -222,6 +226,7 @@ impl Configurations {
         // self.write();
     }
 
+    // cli command to add a file/dir to the list
     pub fn add_file_path(&mut self, file: String, price: i64) {
         // check if this is a file or a directory
         match std::fs::metadata(&file) {
@@ -285,7 +290,7 @@ impl Configurations {
         // Set the port
         self.set_port(port.clone());
 
-        let join =
+        let join = // must run in separate thread so does not block cli inputs
             producer::start_server(self.props.files.clone(), self.props.prices.clone(), port).await;
         self.set_http_client(join);
     }

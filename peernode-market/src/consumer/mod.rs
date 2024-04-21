@@ -25,6 +25,7 @@ pub async fn list_producers(file_hash: String, client: &mut Market) -> Result<()
     Ok(())
 }
 
+// get file I want by hash from producer
 pub async fn get_file(
     producer: String,
     file_hash: String,
@@ -73,6 +74,7 @@ pub async fn get_file(
     }
 }
 
+// get individual chunk of file from producer by hash
 pub async fn get_file_chunk(
     producer: User,
     file_hash: String,
@@ -82,6 +84,7 @@ pub async fn get_file_chunk(
     http::get_file_chunk(producer, file_hash.clone(), token, chunk).await
 }
 
+// TODO: implement upload_file
 // pub async fn upload_file(file_path: String, market: String) -> Result<()> {
 //     let mut client = MarketClient::new(market).await?;
 //     //let file_hash = client.upload_file(file_path).await?;
