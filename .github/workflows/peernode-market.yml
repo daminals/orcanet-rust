@@ -1,4 +1,4 @@
-name: Peernode CI
+name: Peernode Market CI
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
       working-directory: peernode-market
       run: cargo build --verbose
     - name: Test
-      working-directory: peernode
+      working-directory: peernode-market
       run: cargo test --verbose
   format:
     name: Format Peernode
