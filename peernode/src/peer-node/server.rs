@@ -4,7 +4,12 @@ pub mod producer;
 pub mod store;
 
 use axum::{
-    body::Body, extract::{Path, State}, http::{header, StatusCode}, response::{IntoResponse, Response}, routing::{get, post, put}, Json, Router
+    body::Body,
+    extract::{Path, State},
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
+    routing::{get, post, put},
+    Json, Router,
 };
 use serde::Deserialize;
 use std::sync::Arc;
@@ -13,7 +18,7 @@ use tokio::sync::Mutex;
 // shared server state
 #[derive(Clone)]
 pub struct ServerState {
-    pub config: Arc<Mutex<store::Configurations>>
+    pub config: Arc<Mutex<store::Configurations>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -120,8 +125,8 @@ async fn get_file_info(
 
 // DeleteFile - Deletes a file from the configurations
 async fn delete_file(
-    State(state): State<ServerState>, 
-    Path(hash): Path<String>
+    State(state): State<ServerState>,
+    Path(hash): Path<String>,
 ) -> impl IntoResponse {
     let mut config = state.config.lock().await;
     config.remove_file(hash.clone());
@@ -136,16 +141,12 @@ async fn delete_file(
 struct AddJob {
     fileHash: String,
     peerId: String,
-
 }
 // AddJob - Adds a job to the producer's job queue
 // takes in a fileHash and peerID.
 // returns a jobId of the newly created job
 // TODO: implement this
-async fn add_job(
-    State(state): State<ServerState>,
-    Json(job): Json<AddJob>
-) -> impl IntoResponse {
+async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> impl IntoResponse {
     let mut config = state.config.lock().await;
 
     let file_hash = job.fileHash;
@@ -153,7 +154,10 @@ async fn add_job(
 
     Response::builder()
         .status(StatusCode::OK)
-        .body(Body::from(format!("{{\"jobId\": \"{}\", \"fileHash\": \"{}\"}}", peer_id, file_hash)))
+        .body(Body::from(format!(
+            "{{\"jobId\": \"{}\", \"fileHash\": \"{}\"}}",
+            peer_id, file_hash
+        )))
         .unwrap()
 }
 
@@ -162,7 +166,7 @@ async fn add_job(
 async fn main() {
     let config = store::Configurations::new().await;
     let state = ServerState {
-        config: Arc::new(Mutex::new(config))
+        config: Arc::new(Mutex::new(config)),
     };
 
     let app = Router::new()

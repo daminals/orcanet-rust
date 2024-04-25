@@ -48,10 +48,13 @@ impl Jobs {
         let mut history = self.history.write().await;
 
         // Add the job to the history map
-        history.insert(job_id.clone(), HistoryEntry {
-            fileName: filename,
-            timeCompleted: 0,
-        });
+        history.insert(
+            job_id.clone(),
+            HistoryEntry {
+                fileName: filename,
+                timeCompleted: 0,
+            },
+        );
 
         job_id
     }
@@ -63,7 +66,7 @@ impl Jobs {
         // Get the job
         jobs.get(job_id).cloned()
     }
-    
+
     pub async fn get_job_history(&self) -> Vec<HistoryEntry> {
         // Get a read lock on the job history
         let history = self.history.read().await;
