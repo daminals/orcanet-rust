@@ -97,14 +97,14 @@ impl FileMap {
         // Get a write lock on the files map
         let mut files = self.files.write().await;
         let mut prices = self.prices.write().await;
-        let mut fileNames = self.filenames.write().await;
+        let mut filenames = self.filenames.write().await;
 
         // Open the file
         let mut file = File::open(file_path)?;
         let hash = hash_file(&mut file)?;
         files.insert(hash.clone(), file_path.into());
         prices.insert(hash.clone(), price);
-        fileNames.insert(hash.clone(), file_path.into());
+        filenames.insert(hash.clone(), file_path.into());
 
         Ok(hash)
     }

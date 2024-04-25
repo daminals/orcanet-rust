@@ -28,7 +28,7 @@ struct FileParams {
     continue_download: String,
 }
 
-// This endpoint was removed in the lastest API
+// This endpoint was removed in the latest API
 //
 // async fn get_file(
 //     // Path(hash): Path<String>,
