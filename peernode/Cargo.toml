@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[bin]] # Bin to run the gRPC client
 name = "peer-node"
-path = "src/client.rs"
+path = "src/peer-node/client.rs"
 
 [dependencies]
 tonic = "0.11"
@@ -27,6 +27,7 @@ config = "0.14.0"
 serde_json = "1.0.115"
 base64 = "0.22.0"
 libp2p = { version = "0.53.2", features = ["kad", "tokio", "tcp", "mdns", "noise", "yamux", "macros", "dns", "rsa"] }
+orcanet-market = { path = "../market" }
 
 [build-dependencies]
 tonic-build = "0.11"

@@ -2,7 +2,7 @@ mod db;
 pub mod files;
 mod http;
 
-use crate::market::Market;
+use orcanet_market::Market;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;

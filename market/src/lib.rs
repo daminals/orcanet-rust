@@ -1,6 +1,7 @@
 pub mod dht;
 pub mod dht_entry;
-use crate::market::dht::DhtClient;
+
+use crate::dht::*;
 
 use std::io::Write;
 
@@ -25,7 +26,7 @@ pub fn get_current_time() -> u64 {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct User {
+pub struct SupplierInfo {
     pub id: String,
     pub name: String,
     pub ip: String,
@@ -35,7 +36,7 @@ pub struct User {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HoldersResponse {
-    pub holders: Vec<User>,
+    pub holders: Vec<SupplierInfo>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,7 +45,7 @@ pub struct FileMetadata {
     // (chunk hash, size in bytes)
     pub chunk: Vec<(String, u64)>,
     // (supplier, expiration)
-    pub suppliers: Vec<(User, u64)>,
+    pub suppliers: Vec<(SupplierInfo, u64)>,
 }
 
 #[derive(Debug)]
@@ -98,7 +99,7 @@ impl Market {
         file_hash: String,
         chunk_metadata: Vec<(String, u64)>,
     ) -> Result<()> {
-        let user = User {
+        let user = SupplierInfo {
             id,
             name,
             ip,
@@ -179,7 +180,7 @@ impl Market {
     async fn insert_and_validate(
         &self,
         hash: String,
-        user: User,
+        user: SupplierInfo,
         chunk_metadata: Vec<(String, u64)>,
         expiration: u64,
     ) {
@@ -203,3 +204,4 @@ impl Market {
         }
     }
 }
+

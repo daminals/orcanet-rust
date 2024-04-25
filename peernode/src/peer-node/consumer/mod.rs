@@ -1,7 +1,7 @@
 pub mod encode;
 pub mod http;
 
-use crate::market::{Market, User};
+use orcanet_market::{Market, SupplierInfo};
 use anyhow::Result;
 
 use self::http::GetFileResponse;
@@ -76,7 +76,7 @@ pub async fn get_file(
 
 // get individual chunk of file from producer by hash
 pub async fn get_file_chunk(
-    producer: User,
+    producer: SupplierInfo,
     file_hash: String,
     token: String,
     chunk: u64,

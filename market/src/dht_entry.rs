@@ -1,4 +1,4 @@
-use crate::market::*;
+use crate::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use std::collections::{HashMap, HashSet};
@@ -28,7 +28,7 @@ impl DhtEntry for FileMetadata {
             return cur;
         }
 
-        let mut merged_ids: HashMap<String, (User, u64)> = cur
+        let mut merged_ids: HashMap<String, (SupplierInfo, u64)> = cur
             .suppliers
             .iter()
             .map(|x| (x.0.id.clone(), x.clone()))

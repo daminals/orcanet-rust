@@ -1,4 +1,4 @@
-use crate::market::Market;
+use orcanet_market::Market;
 use crate::producer;
 use anyhow::Result;
 use config::{Config, File, FileFormat};

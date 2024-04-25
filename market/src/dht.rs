@@ -1,5 +1,5 @@
-use crate::market::dht_entry::*;
-use crate::market::*;
+use crate::*;
+use crate::dht_entry::*;
 
 use anyhow::{anyhow, Result};
 use std::collections::{hash_map, HashMap, HashSet};
@@ -22,7 +22,6 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
-use tonic::Status;
 
 #[derive(NetworkBehaviour)]
 struct Behaviour {
@@ -185,7 +184,7 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                             }
                             _ => {
                                 for waiting in pending_get.get_mut(key_str).expect("Expected key in waiting map").drain(..) {
-                                    let _ = waiting.send(Err(Status::unavailable("Failed to get record")));
+                                    let _ = waiting.send(Err(anyhow!("Failed to get record")));
                                 }
                             }
                         }
@@ -203,7 +202,7 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                     kad::QueryResult::PutRecord(Err(err)) => {
                         eprintln!("Failed to put record: {err:?}");
                         for waiting in pending_put.get_mut(std::str::from_utf8(err.key().as_ref()).unwrap()).expect("Expected key in waiting map").drain(..) {
-                            let _ = waiting.send(Err(Status::unknown("Failed to put record")));
+                            let _ = waiting.send(Err(anyhow!("Failed to put record")));
                         }
                     }
                     kad::QueryResult::StartProviding(Ok(kad::AddProviderOk { key })) => {
@@ -261,12 +260,12 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
 pub enum Command {
     Get {
         key: String,
-        resp: oneshot::Sender<Result<Option<String>, Status>>,
+        resp: oneshot::Sender<Result<Option<String>>>,
     },
     Set {
         key: String,
         val: String,
-        resp: oneshot::Sender<Result<(), Status>>,
+        resp: oneshot::Sender<Result<()>>,
     },
     Dial {
         peer_id: PeerId,
@@ -422,7 +421,7 @@ impl DhtClient {
     pub async fn get<T: DhtEntry + DeserializeOwned>(
         &self,
         key: &str,
-    ) -> Result<Option<T>, Status> {
+    ) -> Result<Option<T>> {
         let (tx, rx) = oneshot::channel();
         self.tx_kad
             .send(Command::Get {
@@ -436,10 +435,9 @@ impl DhtClient {
         Ok(res.map(|res| serde_json::from_str(&res).unwrap()))
     }
 
-    pub async fn set<T: DhtEntry>(&self, key: &str, value: T) -> Result<(), Status> {
+    pub async fn set<T: DhtEntry>(&self, key: &str, value: T) -> Result<()> {
         let serialized = serde_json::to_string(&value).map_err(|err| {
-            eprintln!("{err}");
-            Status::internal("Failed to serialize requests")
+            anyhow!("Failed to serialize requests: {err}")
         })?;
 
         let (tx, rx) = oneshot::channel();
@@ -457,14 +455,14 @@ impl DhtClient {
     }
 
     #[allow(dead_code)]
-    pub async fn get_all_file_hashes(&self) -> Result<Option<ProvidedFiles>, Status> {
+    pub async fn get_all_file_hashes(&self) -> Result<Option<ProvidedFiles>> {
         self.get::<ProvidedFiles>("all_files").await
     }
 
-    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<FileMetadata>, Status> {
+    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<FileMetadata>> {
         self.get::<FileMetadata>(file_hash).await
     }
-    pub async fn set_requests(&self, key: &str, requests: FileMetadata) -> Result<(), Status> {
+    pub async fn set_requests(&self, key: &str, requests: FileMetadata) -> Result<()> {
         self.set::<ProvidedFiles>(
             "all_files",
             ProvidedFiles(HashSet::from([requests.file_hash.clone()])),

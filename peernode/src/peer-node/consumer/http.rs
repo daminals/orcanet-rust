@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-use crate::market::User;
+use orcanet_market::SupplierInfo;
 
 use std::time::Instant;
 use tokio::fs::OpenOptions;
@@ -12,7 +12,7 @@ pub enum GetFileResponse {
 }
 
 pub async fn get_file_chunk(
-    producer: User,
+    producer: SupplierInfo,
     file_hash: String,
     token: String,
     chunk: u64,
