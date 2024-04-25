@@ -1,6 +1,7 @@
 mod db;
 pub mod files;
 mod http;
+pub mod jobs;
 
 use orcanet_market::Market;
 use proto::market::FileInfo;
