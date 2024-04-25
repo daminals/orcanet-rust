@@ -21,6 +21,7 @@ pub struct Properties {
     name: String,
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
+    filenames: HashMap<String, String>,
     file_infos: HashMap<String, FileInfo>,
     tokens: HashMap<String, String>,
     port: String,
@@ -64,6 +65,7 @@ impl Configurations {
         let default = Configurations {
             props: Properties {
                 name: "default".to_string(),
+                filenames: HashMap::new(),
                 files: HashMap::new(),
                 prices: HashMap::new(),
                 file_infos: HashMap::new(),
@@ -297,7 +299,7 @@ impl Configurations {
         self.set_port(port.clone());
 
         let join = // must run in separate thread so does not block cli inputs
-            producer::start_server(self.props.files.clone(), self.props.prices.clone(), port).await;
+            producer::start_server(self.props.files.clone(), self.props.prices.clone(), self.props.filenames.clone(), port).await;
         self.set_http_client(join);
     }
 

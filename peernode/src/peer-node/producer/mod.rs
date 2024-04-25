@@ -14,10 +14,11 @@ use anyhow::{anyhow, Result};
 pub async fn start_server(
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
+    filenames: HashMap<String, String>,
     port: String,
 ) -> tokio::task::JoinHandle<()> {
     // Launch the HTTP server in the background
-    let http_file_map = Arc::new(files::FileMap::new(files, prices));
+    let http_file_map = Arc::new(files::FileMap::new(files, prices, filenames));
     tokio::spawn(async move {
         if let Err(e) = http::run(http_file_map, port).await {
             eprintln!("HTTP server error: {}", e);
