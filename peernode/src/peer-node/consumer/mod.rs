@@ -13,7 +13,7 @@ pub async fn list_producers(file_hash: String, client: &mut Market) -> Result<St
         Some(producers) => producers,
         None => {
             println!("No producers for file {file_hash}");
-            return Ok(());
+            return Ok("".into());
         }
     };
     let mut producer_list = String::new();

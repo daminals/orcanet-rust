@@ -1,5 +1,5 @@
 use crate::producer;
-use crate::{grpc::MarketClient, producer::jobs::Jobs};
+use crate::producer::jobs::Jobs;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use libp2p::Multiaddr;
@@ -13,7 +13,7 @@ pub struct Configurations {
     // this is the struct that will be used to store the configurations
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
-    market_client: Option<MarketClient>,
+    market_client: Option<Market>,
     jobs_state: Jobs,
 }
 
@@ -246,19 +246,12 @@ impl Configurations {
             }
         };
 
-        // get the file's FileInfo
-        let file_info = match self.get_file_info(file.clone()) {
-            Ok(file_info) => file_info,
-            Err(_) => {
-                panic!("Failed to get FileInfo");
-            }
-        };
-
         self.props.file_names.insert(hash.clone(), file.clone());
         self.props.files.insert(hash.clone(), PathBuf::from(file));
         self.props.prices.insert(hash.clone(), price);
-        self.props.file_infos.insert(hash, file_info);
+        self.props.file_infos.insert(hash.clone(), file_info);
         // self.write();
+        hash
     }
 
     // cli command to add a file/dir to the list

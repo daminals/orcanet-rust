@@ -64,7 +64,7 @@ pub async fn register_files(
             }
         },
     };
-    //let ip = "0.0.0.0".to_string();
+    let ip = "0.0.0.0".to_string();
     println!("Producer: IP address is {}", ip);
 
     // Generate a random Producer ID

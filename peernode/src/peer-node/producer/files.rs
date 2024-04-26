@@ -185,6 +185,7 @@ impl Default for FileMap {
         FileMap {
             files: RwLock::new(HashMap::new()),
             prices: RwLock::new(HashMap::new()),
+            file_names: RwLock::new(HashMap::new()),
         }
     }
 }
