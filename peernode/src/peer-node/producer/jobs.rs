@@ -112,7 +112,12 @@ impl Jobs {
     pub async fn get_job_info(&self, job_id: &str) -> Option<JobInfo> {
         let jobs = self.jobs.read().await;
 
-        let job = jobs.get(job_id).unwrap().lock().await;
+        let job = match jobs.get(job_id) {
+            Some(job) => job.clone(),
+            None => return None,
+        };
+
+        let job = job.lock().await;
 
         let job_info = JobInfo {
             fileHash: job.file_hash.clone(),
