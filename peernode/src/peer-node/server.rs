@@ -205,15 +205,14 @@ async fn get_job_list(State(state): State<ServerState>) -> impl IntoResponse {
     let config = state.config.lock().await;
     let jobs_list = config.get_jobs_state().get_jobs_list().await;
 
-    let str_list = serde_json::to_string(&jobs_list).unwrap();
+    let jobs_json = serde_json::to_string(&jobs_list).unwrap();
     Response::builder()
         .status(StatusCode::OK)
-        .body(Body::from(format!("{{\"jobs\": \"{:?}\"}}", str_list)))
+        .body(Body::from(format!("{{\"jobs\": \"{:?}\"}}", jobs_json)))
         .unwrap()
 }
 
-// Get Job - Adds a job to the producer's job queue
-// returns a list of jobs
+// Get Job Info
 async fn get_job_info(
     State(state): State<ServerState>,
     Path(jobID): Path<String>,
@@ -234,6 +233,54 @@ async fn get_job_info(
         .unwrap()
 }
 
+// Get History
+async fn get_history(State(state): State<ServerState>) -> impl IntoResponse {
+    let config = state.config.lock().await;
+    let history = config.get_jobs_state().get_job_history().await;
+
+    let history_json = serde_json::to_string(&history).unwrap();
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from(format!("{{\"jobs\": \"{:?}\"}}", history_json)))
+        .unwrap()
+}
+
+#[derive(Deserialize)]
+struct RemoveFromHistory {
+    jobID: String,
+}
+// Remove From History
+async fn remove_from_history(
+    State(state): State<ServerState>,
+    Json(job): Json<RemoveFromHistory>,
+) -> impl IntoResponse {
+    let config = state.config.lock().await;
+    let res = config
+        .get_jobs_state()
+        .remove_job_from_history(&job.jobID)
+        .await;
+
+    if !res {
+        return (StatusCode::NOT_FOUND, "Job not found").into_response();
+    }
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from("History cleared"))
+        .unwrap()
+}
+
+// Clear History
+async fn clear_history(State(state): State<ServerState>) -> impl IntoResponse {
+    let config = state.config.lock().await;
+    config.get_jobs_state().clear_job_history().await;
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from("History cleared"))
+        .unwrap()
+}
+
 // Main function to setup and run the server
 #[tokio::main]
 async fn main() {
@@ -247,6 +294,9 @@ async fn main() {
         .route("/upload", post(upload_file))
         .route("/file/:hash/info", get(get_file_info))
         .route("/file/:hash", post(delete_file))
+        .route("/get-history", get(get_history))
+        .route("/remove-from-history", put(remove_from_history))
+        .route("/clear-history", put(clear_history))
         .route("/add-job", put(add_job))
         .route("/job-list", get(get_job_list))
         .route("/job-info/:jobID", get(get_job_info))

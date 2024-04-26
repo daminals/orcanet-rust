@@ -49,7 +49,7 @@ pub struct JobInfo {
     projectedCost: u64,
     eta: u64,
 }
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct HistoryEntry {
     fileName: String,
     timeCompleted: u64, // unix time in seconds
@@ -155,9 +155,20 @@ impl Jobs {
         jobs_list
     }
 
-    pub async fn finish_job(&self, job_id: &str) {
+    pub async fn finish_job(&self, job_id: &str) -> bool {
         let mut jobs = self.jobs.write().await;
-        let mut job = jobs.get_mut(job_id).unwrap().lock().await;
+
+        // get the job, returning false if it doesn't exist
+        let job = match jobs.get_mut(job_id) {
+            Some(job) => job.clone(),
+            None => return false,
+        };
+
+        let mut job = job.lock().await;
+
+        if job.status == "completed" {
+            return false;
+        }
 
         // mark the job as completed
         job.status = "completed".to_string();
@@ -169,6 +180,8 @@ impl Jobs {
             timeCompleted: 0,
         };
         history.insert(job_id.to_string(), history_entry);
+
+        true
     }
 
     pub async fn get_job_history(&self) -> Vec<HistoryEntry> {
@@ -177,10 +190,10 @@ impl Jobs {
         history.values().cloned().collect()
     }
 
-    pub async fn remove_job_from_history(&self, job_id: &str) {
+    pub async fn remove_job_from_history(&self, job_id: &str) -> bool {
         let mut history = self.history.write().await;
 
-        history.remove(job_id);
+        history.remove(job_id).is_some()
     }
 
     pub async fn clear_job_history(&self) {
