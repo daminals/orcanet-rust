@@ -120,12 +120,13 @@ pub async fn start(job: AsyncJob, token: String) {
 }
 
 #[derive(Serialize)]
+#[allow(non_snake_case)]
 pub struct JobListItem {
-    job_id: String,
-    file_name: String,
-    file_size: u64,
+    jobID: String,
+    fileName: String,
+    fileSize: u64,
     eta: u64,
-    time_queued: u64,
+    timeQueued: u64,
     status: String,
 }
 
@@ -233,11 +234,11 @@ impl Jobs {
             let job = job.lock().await;
 
             let job_item = JobListItem {
-                job_id: job.job_id.clone(),
-                file_name: job.file_name.clone(),
-                file_size: job.file_size,
+                jobID: job.job_id.clone(),
+                fileName: job.file_name.clone(),
+                fileSize: job.file_size,
                 eta: job.eta,
-                time_queued: job.time_queued,
+                timeQueued: job.time_queued,
                 status: job.status.to_string(),
             };
             jobs_list.push(job_item);
