@@ -257,18 +257,19 @@ async fn remove_from_history(
     Json(job): Json<RemoveFromHistory>,
 ) -> impl IntoResponse {
     let config = state.config.lock().await;
-    let res = config
+
+    let successful = config
         .get_jobs_state()
         .remove_job_from_history(&job.jobID)
         .await;
 
-    if !res {
+    if !successful {
         return (StatusCode::NOT_FOUND, "Job not found").into_response();
     }
 
     Response::builder()
         .status(StatusCode::OK)
-        .body(Body::from("History cleared"))
+        .body(Body::from("Job successfully removed from history"))
         .unwrap()
 }
 
