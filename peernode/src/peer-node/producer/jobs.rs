@@ -48,8 +48,9 @@ impl Jobs {
         }
     }
 
-    pub async fn add_job(&self, 
-        file_hash: String, 
+    pub async fn add_job(
+        &self,
+        file_hash: String,
         file_size: u64,
         filename: String,
         peer_id: String,

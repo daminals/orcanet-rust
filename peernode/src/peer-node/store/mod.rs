@@ -1,5 +1,5 @@
-use crate::{grpc::MarketClient, producer::jobs::Jobs};
 use crate::producer;
+use crate::{grpc::MarketClient, producer::jobs::Jobs};
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use libp2p::Multiaddr;
@@ -13,8 +13,8 @@ pub struct Configurations {
     // this is the struct that will be used to store the configurations
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
-    market_client: Option<Market>,
-    jobs_state: Jobs
+    market_client: Option<MarketClient>,
+    jobs_state: Jobs,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -59,7 +59,7 @@ impl Configurations {
             props,
             http_client: None,
             market_client: None,
-            jobs_state: Jobs::new()
+            jobs_state: Jobs::new(),
         }
     }
 
@@ -82,7 +82,7 @@ impl Configurations {
             },
             http_client: None,
             market_client: None,
-            jobs_state: Jobs::new()
+            jobs_state: Jobs::new(),
         };
         default.write();
         default

@@ -4,7 +4,13 @@ pub mod producer;
 pub mod store;
 
 use axum::{
-    body::Body, debug_handler, extract::{Path, State}, http::{header, StatusCode}, response::{IntoResponse, Response}, routing::{get, post, put}, Json, Router
+    body::Body,
+    debug_handler,
+    extract::{Path, State},
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
+    routing::{get, post, put},
+    Json, Router,
 };
 use serde::Deserialize;
 use std::sync::Arc;
@@ -125,7 +131,7 @@ async fn upload_file(
     Json(file): Json<UploadFile>,
 ) -> impl IntoResponse {
     let mut config = state.config.lock().await;
-    
+
     let hash = config.add_file(file.filePath, file.price);
 
     Response::builder()
@@ -174,23 +180,16 @@ async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> i
 
     let file_size = config.get_file_size(file_name.clone());
 
-    let job_id = config.get_jobs_state().add_job(
-        file_hash.clone(), 
-        file_size,
-        file_name,
-        peer_id.clone(),
-    ).await;
+    let job_id = config
+        .get_jobs_state()
+        .add_job(file_hash.clone(), file_size, file_name, peer_id.clone())
+        .await;
 
     Response::builder()
         .status(StatusCode::OK)
-        .body(Body::from(format!(
-            "{{\"jobId\": \"{}\"}}",
-            job_id
-        )))
+        .body(Body::from(format!("{{\"jobId\": \"{}\"}}", job_id)))
         .unwrap()
 }
-
-
 
 // Get Job - Adds a job to the producer's job queue
 // returns a list of jobs
@@ -201,10 +200,7 @@ async fn get_job_list(State(state): State<ServerState>) -> impl IntoResponse {
     let str_list = serde_json::to_string(&jobs_list).unwrap();
     Response::builder()
         .status(StatusCode::OK)
-        .body(Body::from(format!(
-            "{{\"jobs\": \"{:?}\"}}",
-            str_list
-        )))
+        .body(Body::from(format!("{{\"jobs\": \"{:?}\"}}", str_list)))
         .unwrap()
 }
 
