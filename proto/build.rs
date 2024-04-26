@@ -11,5 +11,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "#[derive(serde::Deserialize, serde::Serialize)]",
         )
         .compile(&["market.proto"], &["."])?;
+    
+    println!("cargo:rerun-if-changed=market.proto");
+    println!("cargo:rerun-if-changed=.");
     Ok(())
 }

@@ -77,7 +77,27 @@ cargo run consumer get <FILE_HASH> <CHOSEN_PRODUCER>
 
 ## CLI Interface
 
-Todo
+To set up a market connection, set the `bootstrap_peers` configuration:
+
+```shell
+market set -b /ip4/130.245.173.204/tcp/6881/p2p/QmSzkZ1jRNzM2CmSLZwZgmC9ePa4t2ji3C8WuffcJnb8R
+```
+
+In order to provide a market server node, set `listen_address` and `private-key`
+
+```shell
+market set -l /ip4/0.0.0.0/tcp/6881 -k private.pk8
+```
+
+Demo:
+
+```shell
+producer add files/giraffe.jpg 1
+producer register
+# new instance
+consumer ls 8c679fbaa3a384196adf87937b58c893304370c5b35f77f83cdb897b030e8fc2
+# make sure you're on a public ip (or edit producer/register_files)
+consumer get 8c679fbaa3a384196adf87937b58c893304370c5b35f77f83cdb897b030e8fc2 {producer_id}
 
 ### Market Connection
 
