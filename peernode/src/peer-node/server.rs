@@ -145,18 +145,54 @@ struct AddJob {
 // AddJob - Adds a job to the producer's job queue
 // takes in a fileHash and peerID.
 // returns a jobId of the newly created job
-// TODO: implement this
 async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> impl IntoResponse {
-    let mut config = state.config.lock().await;
+    let config = state.config.lock().await;
 
     let file_hash = job.fileHash;
     let peer_id = job.peerId;
 
+    let file_name = match config.get_file_names().get(&file_hash) {
+        Some(filename) => filename.clone(),
+        None => {
+            return Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from(format!("{{\"error\": \"File not found\"}}")))
+                .unwrap();
+        }
+    };
+
+    let file_size = config.get_file_size(file_name.clone());
+
+    let job_id = config.get_jobs_state().add_job(
+        file_hash.clone(), 
+        file_size,
+        file_name,
+        peer_id.clone(),
+    ).await;
+
     Response::builder()
         .status(StatusCode::OK)
         .body(Body::from(format!(
-            "{{\"jobId\": \"{}\", \"fileHash\": \"{}\"}}",
-            peer_id, file_hash
+            "{{\"jobId\": \"{}\"}}",
+            job_id
+        )))
+        .unwrap()
+}
+
+
+
+// Get Job - Adds a job to the producer's job queue
+// returns a list of jobs
+async fn get_job_list(State(state): State<ServerState>) -> impl IntoResponse {
+    let config = state.config.lock().await;
+    let jobs_list = config.get_jobs_state().get_jobs_list().await;
+
+    let str_list = serde_json::to_string(&jobs_list).unwrap();
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from(format!(
+            "{{\"jobs\": \"{:?}\"}}",
+            str_list
         )))
         .unwrap()
 }
@@ -173,7 +209,8 @@ async fn main() {
         //.route("/file/:hash", get(get_file))
         .route("/file/:hash/info", get(get_file_info))
         .route("/file/:hash", post(delete_file))
-        .route("/addJob", put(add_job))
+        .route("/add-bob", put(add_job))
+        .route("/job-list", get(get_job_list))
         .with_state(state);
 
     // Start the server

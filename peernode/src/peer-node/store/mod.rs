@@ -1,3 +1,4 @@
+use crate::{grpc::MarketClient, producer::jobs::Jobs};
 use crate::producer;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
@@ -13,6 +14,7 @@ pub struct Configurations {
     props: Properties,
     http_client: Option<tokio::task::JoinHandle<()>>,
     market_client: Option<Market>,
+    jobs_state: Jobs
 }
 
 #[derive(Serialize, Deserialize)]
@@ -21,7 +23,7 @@ pub struct Properties {
     name: String,
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
-    filenames: HashMap<String, String>,
+    file_names: HashMap<String, String>,
     file_infos: HashMap<String, FileInfo>,
     tokens: HashMap<String, String>,
     port: String,
@@ -57,6 +59,7 @@ impl Configurations {
             props,
             http_client: None,
             market_client: None,
+            jobs_state: Jobs::new()
         }
     }
 
@@ -65,7 +68,7 @@ impl Configurations {
         let default = Configurations {
             props: Properties {
                 name: "default".to_string(),
-                filenames: HashMap::new(),
+                file_names: HashMap::new(),
                 files: HashMap::new(),
                 prices: HashMap::new(),
                 file_infos: HashMap::new(),
@@ -79,6 +82,7 @@ impl Configurations {
             },
             http_client: None,
             market_client: None,
+            jobs_state: Jobs::new()
         };
         default.write();
         default
@@ -128,8 +132,21 @@ impl Configurations {
         self.props.files.clone()
     }
 
+    pub fn get_file_names(&self) -> HashMap<String, String> {
+        self.props.file_names.clone()
+    }
+
     pub fn get_prices(&self) -> HashMap<String, i64> {
         self.props.prices.clone()
+    }
+
+    pub fn get_file_size(&self, file_path: String) -> u64 {
+        let metadata = fs::metadata(file_path).unwrap();
+        metadata.len()
+    }
+
+    pub fn get_jobs_state(&self) -> Jobs {
+        self.jobs_state.clone()
     }
 
     pub fn get_file_infos(&self) -> HashMap<String, FileInfo> {
@@ -228,6 +245,15 @@ impl Configurations {
             }
         };
 
+        // get the file's FileInfo
+        let file_info = match self.get_file_info(file.clone()) {
+            Ok(file_info) => file_info,
+            Err(_) => {
+                panic!("Failed to get FileInfo");
+            }
+        };
+
+        self.props.file_names.insert(hash.clone(), file.clone());
         self.props.files.insert(hash.clone(), PathBuf::from(file));
         self.props.prices.insert(hash.clone(), price);
         self.props.file_infos.insert(hash, file_info);
@@ -299,7 +325,7 @@ impl Configurations {
         self.set_port(port.clone());
 
         let join = // must run in separate thread so does not block cli inputs
-            producer::start_server(self.props.files.clone(), self.props.prices.clone(), self.props.filenames.clone(), port).await;
+            producer::start_server(self.props.files.clone(), self.props.prices.clone(), self.props.file_names.clone(), port).await;
         self.set_http_client(join);
     }
 
