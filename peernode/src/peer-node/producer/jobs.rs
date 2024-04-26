@@ -13,6 +13,7 @@ pub struct Jobs {
 
 #[derive(Clone)]
 pub struct Job {
+    job_id: String,
     file_hash: String,
     file_name: String,
     file_size: u64,
@@ -62,9 +63,10 @@ impl Jobs {
 
         // Add the job to the map
         let job = Job {
+            job_id: job_id.clone(),
             file_hash: file_hash.clone(),
             file_name: filename.clone(),
-            file_size: 0,
+            file_size,
             time_queued: 0,
             status: "queued".to_string(),
             accumulated_cost: 0,
@@ -109,7 +111,7 @@ impl Jobs {
             let job = job.lock().await;
 
             let job_item = JobListItem {
-                jobID: job.file_hash.clone(),
+                jobID: job.job_id.clone(),
                 fileName: job.file_name.clone(),
                 fileSize: job.file_size, // TODO
                 eta: job.eta,
