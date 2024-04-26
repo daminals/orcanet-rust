@@ -1,5 +1,5 @@
-use crate::*;
 use crate::dht_entry::*;
+use crate::proto::FileHolders;
 
 use anyhow::{anyhow, Result};
 use std::collections::{hash_map, HashMap, HashSet};
@@ -132,8 +132,8 @@ async fn kad_node(mut swarm: Swarm<Behaviour>, mut rx_kad: mpsc::Receiver<Comman
                 if let kad::InboundRequest::PutRecord { record: Some(record), .. } = request {
                     let mut sp = record.key.as_ref().splitn(2, |&b| b == b'/');
                     let namespace = sp.next().unwrap();
-                    if namespace == FileMetadata::key_namespace().as_bytes() {
-                        let _ = update_entry::<FileMetadata>(&mut swarm, record);
+                    if namespace == FileHolders::key_namespace().as_bytes() {
+                        let _ = update_entry::<FileHolders>(&mut swarm, record);
                     } else if namespace == ProvidedFiles::key_namespace().as_bytes() {
                         let _ = update_entry::<ProvidedFiles>(&mut swarm, record);
                     } else {
@@ -418,10 +418,7 @@ impl DhtClient {
             .map_err(anyhow::Error::msg)
     }
 
-    pub async fn get<T: DhtEntry + DeserializeOwned>(
-        &self,
-        key: &str,
-    ) -> Result<Option<T>> {
+    pub async fn get<T: DhtEntry + DeserializeOwned>(&self, key: &str) -> Result<Option<T>> {
         let (tx, rx) = oneshot::channel();
         self.tx_kad
             .send(Command::Get {
@@ -436,9 +433,8 @@ impl DhtClient {
     }
 
     pub async fn set<T: DhtEntry>(&self, key: &str, value: T) -> Result<()> {
-        let serialized = serde_json::to_string(&value).map_err(|err| {
-            anyhow!("Failed to serialize requests: {err}")
-        })?;
+        let serialized = serde_json::to_string(&value)
+            .map_err(|err| anyhow!("Failed to serialize requests: {err}"))?;
 
         let (tx, rx) = oneshot::channel();
 
@@ -459,15 +455,15 @@ impl DhtClient {
         self.get::<ProvidedFiles>("all_files").await
     }
 
-    pub async fn get_requests(&self, file_hash: &str) -> Result<Option<FileMetadata>> {
-        self.get::<FileMetadata>(file_hash).await
+    pub async fn get_holders(&self, file_hash: &str) -> Result<Option<FileHolders>> {
+        self.get::<FileHolders>(file_hash).await
     }
-    pub async fn set_requests(&self, key: &str, requests: FileMetadata) -> Result<()> {
+    pub async fn set_holders(&self, key: &str, requests: FileHolders) -> Result<()> {
         self.set::<ProvidedFiles>(
             "all_files",
-            ProvidedFiles(HashSet::from([requests.file_hash.clone()])),
+            ProvidedFiles(HashSet::from([requests.file_info.file_hash.clone()])),
         )
         .await?;
-        self.set::<FileMetadata>(key, requests).await
+        self.set::<FileHolders>(key, requests).await
     }
 }

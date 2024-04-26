@@ -1,8 +1,9 @@
-use orcanet_market::Market;
 use crate::producer;
 use anyhow::Result;
 use config::{Config, File, FileFormat};
 use libp2p::Multiaddr;
+use orcanet_market::Market;
+use proto::market::FileInfo;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::PathBuf};
 
@@ -20,7 +21,7 @@ pub struct Properties {
     name: String,
     files: HashMap<String, PathBuf>,
     prices: HashMap<String, i64>,
-    chunk_metadatas: HashMap<String, Vec<(String, u64)>>,
+    file_infos: HashMap<String, FileInfo>,
     tokens: HashMap<String, String>,
     port: String,
     // market config
@@ -65,7 +66,7 @@ impl Configurations {
                 name: "default".to_string(),
                 files: HashMap::new(),
                 prices: HashMap::new(),
-                chunk_metadatas: HashMap::new(),
+                file_infos: HashMap::new(),
                 tokens: HashMap::new(),
                 port: "8080".to_string(),
                 bootstrap_peers: vec![],
@@ -108,12 +109,17 @@ impl Configurations {
         Ok(hash)
     }
 
-    pub fn get_chunk_metadata(&self, file_path: String) -> Result<Vec<(String, u64)>> {
+    pub fn get_file_info(&self, file_path: String) -> Result<FileInfo> {
         // open the file
-        let mut file = std::fs::File::open(file_path)?;
+        let mut file = std::fs::File::open(&file_path)?;
         // chunk metadata the file
         let chunk_metadata = producer::files::generate_chunk_metadata(&mut file)?;
-        Ok(chunk_metadata)
+        Ok(FileInfo {
+            file_hash: self.get_hash(file_path.clone())?,
+            chunk_hashes: chunk_metadata.into_iter().map(|(hash, _size)| hash).collect(),
+            file_size: file.metadata()?.len() as i64,
+            file_name: file_path,
+        })
     }
 
     pub fn get_files(&self) -> HashMap<String, PathBuf> {
@@ -124,8 +130,8 @@ impl Configurations {
         self.props.prices.clone()
     }
 
-    pub fn get_chunk_metadatas(&self) -> HashMap<String, Vec<(String, u64)>> {
-        self.props.chunk_metadatas.clone()
+    pub fn get_file_infos(&self) -> HashMap<String, FileInfo> {
+        self.props.file_infos.clone()
     }
 
     pub fn get_port(&self) -> String {
@@ -212,17 +218,17 @@ impl Configurations {
             }
         };
 
-        // get the file's chunk metadata
-        let chunk_metadata = match self.get_chunk_metadata(file.clone()) {
-            Ok(chunk_metadata) => chunk_metadata,
+        // get the file's FileInfo
+        let file_info = match self.get_file_info(file.clone()) {
+            Ok(file_info) => file_info,
             Err(_) => {
-                panic!("Failed to get chunk metadata");
+                panic!("Failed to get FileInfo");
             }
         };
 
         self.props.files.insert(hash.clone(), PathBuf::from(file));
         self.props.prices.insert(hash.clone(), price);
-        self.props.chunk_metadatas.insert(hash, chunk_metadata);
+        self.props.file_infos.insert(hash, file_info);
         // self.write();
     }
 

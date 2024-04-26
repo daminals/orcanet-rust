@@ -1,6 +1,6 @@
-//use orcanet_market::SupplierInfo;
+//use orcanet_market::User;
 //use orcanet_market::dht::DhtClient;
-//use orcanet_market::{dht, get_current_time, FileMetadata};
+//use orcanet_market::{dht, get_current_time, FileInfo};
 //use rand::{distributions::Alphanumeric, Rng};
 //
 //fn random_string(len: usize) -> String {
@@ -38,7 +38,7 @@
 //
 //    //valid request
 //    let file_hash = random_string(32);
-//    let user1 = SupplierInfo {
+//    let user1 = User {
 //        id: random_string(10),
 //        name: random_string(10),
 //        ip: random_string(10),
@@ -89,7 +89,7 @@
 //
 //    //valid request
 //    let file_hash = random_string(32);
-//    let user1 = SupplierInfo {
+//    let user1 = User {
 //        id: random_string(10),
 //        name: random_string(10),
 //        ip: random_string(10),
@@ -132,7 +132,7 @@
 //
 //    //valid request
 //    let file_hash = random_string(32);
-//    let user1 = SupplierInfo {
+//    let user1 = User {
 //        id: random_string(10),
 //        name: random_string(10),
 //        ip: random_string(10),
@@ -176,7 +176,7 @@
 //    //valid request
 //    let file_hash = random_string(32);
 //    let file_hash_fake = random_string(32);
-//    let user1 = SupplierInfo {
+//    let user1 = User {
 //        id: random_string(10),
 //        name: random_string(10),
 //        ip: random_string(10),
@@ -224,7 +224,7 @@
 //
 //    //valid request
 //    let file_hash = random_string(32);
-//    let user1 = SupplierInfo {
+//    let user1 = User {
 //        id: random_string(10),
 //        name: random_string(10),
 //        ip: random_string(10),
@@ -241,7 +241,7 @@
 //    let requests = vec![fr1.clone()];
 //    let _res = dht_client.set_requests(&file_hash, requests).await;
 //
-//    let user2 = SupplierInfo {
+//    let user2 = User {
 //        id: random_string(10),
 //        name: random_string(10),
 //        ip: random_string(10),

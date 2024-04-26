@@ -3,6 +3,7 @@ pub mod files;
 mod http;
 
 use orcanet_market::Market;
+use proto::market::FileInfo;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -31,7 +32,7 @@ pub async fn stop_server(join_handle: tokio::task::JoinHandle<()>) -> Result<()>
 
 pub async fn register_files(
     prices: HashMap<String, i64>,
-    chunk_metadatas: HashMap<String, Vec<(String, u64)>>,
+    file_info_map: HashMap<String, FileInfo>,
     client: &mut Market,
     port: String,
     ip: Option<String>,
@@ -71,11 +72,11 @@ pub async fn register_files(
             "Producer: Registering file with hash {} and price {}",
             hash, price
         );
-        let chunk_metadata = match chunk_metadatas.get(&hash) {
-            Some(chunk_metadata) => chunk_metadata.clone(),
+        let file_info = match file_info_map.get(&hash) {
+            Some(file_info) => file_info.clone(),
             None => {
                 eprintln!(
-                    "Producer: No chunk metadata provided for file with hash {}",
+                    "Producer: No file_info provided for file with hash {}",
                     hash
                 );
                 continue;
@@ -89,8 +90,7 @@ pub async fn register_files(
                 ip.clone(),
                 port,
                 price,
-                hash,
-                chunk_metadata,
+                file_info,
             )
             .await?;
     }

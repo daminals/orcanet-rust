@@ -14,8 +14,8 @@ The `setup.sh` script provided should install dependencies and build the project
 
 ## Dht API
 
-- The market stores file metadata in a FileMetadata struct, with key
-  `FileMetadata/{file_hash}`
+- The market stores file metadata in a FileInfo struct, with key
+  `FileInfo/{file_hash}`
   - `file_hash`: the SHA-256 hash of the file contents
   - `chunk`: `Vec<(String, u64)>` a list of file hashes and sizes for each chunk
   of the file

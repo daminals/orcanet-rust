@@ -28,8 +28,8 @@
 //
 //#[tokio::test]
 //async fn test_register_file() {
-//    // Create a SupplierInfo and register a file
-//    let user = SupplierInfo {
+//    // Create a User and register a file
+//    let user = User {
 //        id: "12345".into(),
 //        name: "Shuai Mu".into(),
 //        ip: "123.456.789.0".into(),
@@ -63,7 +63,7 @@
 //    let id = "22222".to_owned();
 //    let name = "Shuai Mu2".to_owned();
 //
-//    let user = SupplierInfo {
+//    let user = User {
 //        id: id.clone(),
 //        name: name.clone(),
 //        ip: "223.456.789.0".into(),
@@ -102,7 +102,7 @@
 //            .holders
 //            .iter()
 //            .any(|u| u.id == id && u.name == name),
-//        "Test 2 Failed: SupplierInfo Shuai Mu2 should be a holder.\n"
+//        "Test 2 Failed: User Shuai Mu2 should be a holder.\n"
 //    );
 //}
 //
@@ -142,7 +142,7 @@
 //
 //    // add file to server from one user
 //    let id1 = "44444".to_owned();
-//    let user1 = SupplierInfo {
+//    let user1 = User {
 //        id: id1.clone(),
 //        name: "Shuai4".to_owned(),
 //        ip: "444.456.789.0".into(),
@@ -162,7 +162,7 @@
 //        .unwrap();
 //    println!("Test 4 - RegisterFile Response: {:?}", register_response);
 //
-//    let _user2 = SupplierInfo {
+//    let _user2 = User {
 //        id: "98765".into(),
 //        name: "Shumai".into(),
 //        ip: "100.200.300.400".into(),
@@ -192,7 +192,7 @@
 //
 //#[tokio::test]
 //async fn test_register_no_user() {
-//    // Test 5: Attempt to Register a File with No SupplierInfo
+//    // Test 5: Attempt to Register a File with No User
 //    let mut client = MarketClient::connect("http://127.0.0.1:50051")
 //        .await
 //        .unwrap();
@@ -217,7 +217,7 @@
 //    let mut client = MarketClient::connect("http://127.0.0.1:50051")
 //        .await
 //        .unwrap();
-//    let user_for_test_6 = SupplierInfo {
+//    let user_for_test_6 = User {
 //        id: "user6".into(),
 //        name: "Bob".into(),
 //        ip: "192.168.1.6".into(),
@@ -250,7 +250,7 @@
 //            .holders
 //            .iter()
 //            .any(|u| u.id == "user6"),
-//        "Test 6 Failed: SupplierInfo Six should be a holder of the file."
+//        "Test 6 Failed: User Six should be a holder of the file."
 //    );
 //}
 //

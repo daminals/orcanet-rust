@@ -1,16 +1,18 @@
 pub mod dht;
 pub mod dht_entry;
+pub mod proto;
 
 use crate::dht::*;
 
 use std::io::Write;
 
+use ::proto::market::{FileInfo, HoldersResponse, User};
 use anyhow::{anyhow, Context, Result};
 use libp2p::identity::Keypair;
 use libp2p::Multiaddr;
+use proto::FileHolders;
 use tokio::task::JoinHandle;
 
-use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // time in secs that a file is valid for
@@ -23,29 +25,6 @@ pub fn get_current_time() -> u64 {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
     since_the_epoch.as_secs()
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SupplierInfo {
-    pub id: String,
-    pub name: String,
-    pub ip: String,
-    pub port: i32,
-    pub price: i64,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct HoldersResponse {
-    pub holders: Vec<SupplierInfo>,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FileMetadata {
-    pub file_hash: String,
-    // (chunk hash, size in bytes)
-    pub chunk: Vec<(String, u64)>,
-    // (supplier, expiration)
-    pub suppliers: Vec<(SupplierInfo, u64)>,
 }
 
 #[derive(Debug)]
@@ -96,10 +75,9 @@ impl Market {
         ip: String,
         port: i32,
         price: i64,
-        file_hash: String,
-        chunk_metadata: Vec<(String, u64)>,
+        file_info: FileInfo,
     ) -> Result<()> {
-        let user = SupplierInfo {
+        let user = User {
             id,
             name,
             ip,
@@ -108,13 +86,8 @@ impl Market {
         };
 
         // insert the file request into the market data and validate the holders
-        self.insert_and_validate(
-            file_hash,
-            user,
-            chunk_metadata,
-            get_current_time() + EXPIRATION_OFFSET,
-        )
-        .await;
+        self.insert_and_validate(user, file_info, get_current_time() + EXPIRATION_OFFSET)
+            .await;
 
         Ok(())
     }
@@ -125,7 +98,7 @@ impl Market {
 
         let mut users = vec![];
 
-        let mut holders = match self.dht_client.get_requests(file_hash.as_str()).await? {
+        let mut holders = match self.dht_client.get_holders(file_hash.as_str()).await? {
             Some(holders) => holders,
             None => return Ok(None),
         };
@@ -134,7 +107,7 @@ impl Market {
 
         let mut first_valid = -1;
         //TODO: use binary search since times are inserted in order
-        for (i, holder) in holders.suppliers.iter().enumerate() {
+        for (i, holder) in holders.holders.iter().enumerate() {
             if holder.1 > now {
                 first_valid = i as i32;
                 break;
@@ -143,23 +116,23 @@ impl Market {
 
         // no valid files, remove all of them
         if first_valid == -1 {
-            println!("All suppliers ({}) expired.", holders.suppliers.len());
+            println!("All holders ({}) expired.", holders.holders.len());
             //market_data.files.remove(&file_hash);
-            holders.suppliers.clear();
+            holders.holders.clear();
         } else {
             if first_valid > 0 {
                 println!("Found {} expired files", first_valid);
                 // remove expired times
-                holders.suppliers.drain(0..first_valid as usize);
+                holders.holders.drain(0..first_valid as usize);
             }
 
-            for holder in &holders.suppliers {
-                users.push(holder.0.clone());
+            for holder in &holders.holders {
+                users.push(holder.clone());
             }
         }
         if let Err(err) = self
             .dht_client
-            .set_requests(file_hash.as_str(), holders)
+            .set_holders(file_hash.as_str(), holders.clone())
             .await
         {
             eprintln!("Error: {:?}", err);
@@ -167,7 +140,10 @@ impl Market {
 
         //market_data.print_holders_map();
 
-        Ok(Some(HoldersResponse { holders: users }))
+        Ok(Some(HoldersResponse {
+            file_info: Some(holders.file_info),
+            holders: users.into_iter().map(|(user, _exp)| user).collect(),
+        }))
     }
 
     pub async fn stop(self) -> Result<()> {
@@ -177,31 +153,31 @@ impl Market {
         res
     }
 
-    async fn insert_and_validate(
-        &self,
-        hash: String,
-        user: SupplierInfo,
-        chunk_metadata: Vec<(String, u64)>,
-        expiration: u64,
-    ) {
-        let Ok(file_metadata) = self.dht_client.get::<FileMetadata>(&hash).await else {
+    async fn insert_and_validate(&self, user: User, file_info: FileInfo, expiration: u64) {
+        let Ok(file_holders) = self
+            .dht_client
+            .get::<FileHolders>(&file_info.file_hash)
+            .await
+        else {
             eprintln!("Failed to fetch file requests from Kad");
             return;
         };
-        let mut file_metadata = file_metadata.unwrap_or(FileMetadata {
-            file_hash: hash.clone(),
-            chunk: chunk_metadata,
-            suppliers: vec![],
+        let mut file_holders = file_holders.unwrap_or(FileHolders {
+            file_info: file_info.clone(),
+            holders: vec![],
         });
         let current_time = get_current_time();
-        file_metadata
-            .suppliers
+        file_holders
+            .holders
             .retain(|(holder, exp)| *exp >= current_time && holder.id != user.id);
-        file_metadata.suppliers.push((user, expiration));
-        match self.dht_client.set_requests(&hash, file_metadata).await {
+        file_holders.holders.push((user, expiration));
+        match self
+            .dht_client
+            .set_holders(&file_info.file_hash, file_holders)
+            .await
+        {
             Ok(_) => {}
             Err(_) => eprintln!("Failed to update file requests in Kad"),
         }
     }
 }
-

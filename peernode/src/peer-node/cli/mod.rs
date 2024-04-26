@@ -179,7 +179,7 @@ pub async fn handle_arg_matches(
             match producer_matches.subcommand() {
                 Some(("register", register_matches)) => {
                     let prices = config.get_prices();
-                    let chunk_metadatas = config.get_chunk_metadatas();
+                    let file_info = config.get_file_infos();
                     // register files with the market service
                     let port = match register_matches.get_one::<String>("PORT") {
                         Some(port) => port.clone(),
@@ -188,14 +188,8 @@ pub async fn handle_arg_matches(
                     let market_client = config.get_market_client().await?;
                     let ip = register_matches.get_one::<String>("IP").cloned();
                     // let market_client = config.get_market_client().await?;
-                    producer::register_files(
-                        prices,
-                        chunk_metadatas,
-                        market_client,
-                        port.clone(),
-                        ip,
-                    )
-                    .await?;
+                    producer::register_files(prices, file_info, market_client, port.clone(), ip)
+                        .await?;
                     config.start_http_client(port).await;
                     Ok(())
                 }
