@@ -194,7 +194,7 @@ async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> i
 
     Response::builder()
         .status(StatusCode::OK)
-        .body(Body::from(format!("{{\"jobId\": \"{}\"}}", job_id)))
+        .body(Body::from(format!("{{\"jobID\": \"{}\"}}", job_id)))
         .unwrap()
 }
 
@@ -208,6 +208,29 @@ async fn get_job_list(State(state): State<ServerState>) -> impl IntoResponse {
     Response::builder()
         .status(StatusCode::OK)
         .body(Body::from(format!("{{\"jobs\": \"{:?}\"}}", str_list)))
+        .unwrap()
+}
+
+
+// Get Job - Adds a job to the producer's job queue
+// returns a list of jobs
+async fn get_job_info(
+    State(state): State<ServerState>,
+    Path(jobID): Path<String>,
+) -> impl IntoResponse {
+    let config = state.config.lock().await;
+
+    let job_info = match config.get_jobs_state().get_job_info(&jobID).await {
+        Some(job_info) => job_info,
+        None => {
+            return (StatusCode::NOT_FOUND, "Job not found").into_response();
+        }
+    };
+
+    let info_json = serde_json::to_string(&job_info).unwrap();
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from(info_json))
         .unwrap()
 }
 
@@ -226,6 +249,7 @@ async fn main() {
         .route("/file/:hash", post(delete_file))
         .route("/add-job", put(add_job))
         .route("/job-list", get(get_job_list))
+        .route("/job-info/:jobID", get(get_job_info))
         .with_state(state);
 
     // Start the server

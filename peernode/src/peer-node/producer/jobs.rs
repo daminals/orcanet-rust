@@ -35,6 +35,17 @@ pub struct JobListItem {
     status: String,
 }
 
+#[derive(Serialize)]
+pub struct JobInfo {
+    fileHash: String,
+    fileName: String,
+    fileSize: u64,
+    accumulatedMemory: u64,
+    accumulatedCost: u64,
+    projectedCost: u64,
+    eta: u64,
+
+}
 #[derive(Clone)]
 pub struct HistoryEntry {
     fileName: String,
@@ -95,6 +106,23 @@ impl Jobs {
         let jobs = self.jobs.read().await;
 
         jobs.get(job_id).cloned()
+    }
+    pub async fn get_job_info(&self, job_id: &str) -> Option<JobInfo> {
+        let jobs = self.jobs.read().await;
+
+        let job = jobs.get(job_id).unwrap().lock().await;
+
+        let job_info = JobInfo {
+            fileHash: job.file_hash.clone(),
+            fileName: job.file_name.clone(),
+            fileSize: job.file_size,
+            accumulatedMemory: 0, //TODO
+            accumulatedCost: job.accumulated_cost,
+            projectedCost: job.projected_cost,
+            eta: job.eta,
+        };
+
+        Some(job_info)
     }
 
     pub async fn get_jobs_list(&self) -> Vec<JobListItem> {
