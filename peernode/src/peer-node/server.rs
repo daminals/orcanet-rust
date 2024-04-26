@@ -169,20 +169,27 @@ async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> i
     let peer_id = job.peerId;
 
     let file_name = match config.get_file_names().get(&file_hash) {
-        Some(filename) => filename.clone(),
+        Some(file_name) => file_name.clone(),
         None => {
-            return Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(Body::from(format!("{{\"error\": \"File not found\"}}")))
-                .unwrap();
+            return (StatusCode::NOT_FOUND, "File not found").into_response();
         }
     };
-
+    let price = match config.get_prices().get(&file_hash) {
+        Some(price) => price.clone(),
+        None => {
+            return (StatusCode::NOT_FOUND, "File not found").into_response();
+        }
+    };
     let file_size = config.get_file_size(file_name.clone());
 
     let job_id = config
         .get_jobs_state()
-        .add_job(file_hash.clone(), file_size, file_name, peer_id.clone())
+        .add_job(
+            file_hash.clone(), 
+            file_size, 
+            file_name,
+            price.clone(),
+            peer_id.clone())
         .await;
 
     Response::builder()

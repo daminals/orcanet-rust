@@ -1,6 +1,6 @@
 use rand::Rng;
 use serde::Serialize;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 use tokio::sync::{Mutex, RwLock};
 
 type AsyncJob = Arc<Mutex<Job>>;
@@ -41,6 +41,15 @@ pub struct HistoryEntry {
     timeCompleted: u64, // unix time in seconds
 }
 
+pub fn current_time_secs() -> u64 {
+    let start = SystemTime::now();
+    let since_the_epoch = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards");
+    since_the_epoch.as_secs()
+}
+
+
 impl Jobs {
     pub fn new() -> Self {
         Jobs {
@@ -53,9 +62,11 @@ impl Jobs {
         &self,
         file_hash: String,
         file_size: u64,
-        filename: String,
+        file_name: String,
+        price: i64,
         peer_id: String,
     ) -> String {
+        // generate a random job id
         let job_id = rand::thread_rng().gen::<u64>().to_string();
 
         // Get a write lock on the jobs map
@@ -65,43 +76,28 @@ impl Jobs {
         let job = Job {
             job_id: job_id.clone(),
             file_hash: file_hash.clone(),
-            file_name: filename.clone(),
+            file_name: file_name.clone(),
             file_size,
-            time_queued: 0,
-            status: "queued".to_string(),
+            time_queued: current_time_secs(),
+            status: "active".to_string(),
             accumulated_cost: 0,
-            projected_cost: 0,
-            eta: 0,
+            projected_cost: file_size * price as u64,
+            eta: 0, // TODO, have correct eta
             peerId: peer_id.clone(),
         };
         let async_job = Arc::new(Mutex::new(job));
         jobs.insert(job_id.clone(), async_job.clone());
 
-        // Get a write lock on the job history map
-        let mut history = self.history.write().await;
-
-        // Add the job to the history map
-        history.insert(
-            job_id.clone(),
-            HistoryEntry {
-                fileName: filename,
-                timeCompleted: 0,
-            },
-        );
-
         job_id
     }
 
     pub async fn get_job(&self, job_id: &str) -> Option<AsyncJob> {
-        // Get a read lock on the jobs map
         let jobs = self.jobs.read().await;
 
-        // Get the job
         jobs.get(job_id).cloned()
     }
 
     pub async fn get_jobs_list(&self) -> Vec<JobListItem> {
-        // Get a read lock on the jobs map
         let jobs = self.jobs.read().await;
 
         let mut jobs_list = vec![];
@@ -113,7 +109,7 @@ impl Jobs {
             let job_item = JobListItem {
                 jobID: job.job_id.clone(),
                 fileName: job.file_name.clone(),
-                fileSize: job.file_size, // TODO
+                fileSize: job.file_size,
                 eta: job.eta,
                 timeQueued: job.time_queued,
                 status: job.status.clone(),
@@ -124,22 +120,36 @@ impl Jobs {
         jobs_list
     }
 
+
+    pub async fn finish_job(&self, job_id: &str) {
+        let mut jobs = self.jobs.write().await;
+        let mut job = jobs.get_mut(job_id).unwrap().lock().await;
+
+        // mark the job as completed
+        job.status = "completed".to_string();
+
+        // add the completed job to history
+        let mut history = self.history.write().await;
+        let history_entry = HistoryEntry {
+            fileName: job.file_name.clone(),
+            timeCompleted: 0,
+        };
+        history.insert(job_id.to_string(), history_entry);
+    }
+
     pub async fn get_job_history(&self) -> Vec<HistoryEntry> {
-        // Get a read lock on the job history
         let history = self.history.read().await;
 
         history.values().cloned().collect()
     }
 
     pub async fn remove_job_from_history(&self, job_id: &str) {
-        // Get a write lock on the job history
         let mut history = self.history.write().await;
 
         history.remove(job_id);
     }
 
     pub async fn clear_job_history(&self) {
-        // Get a write lock on the job history
         let mut history = self.history.write().await;
 
         history.clear();
