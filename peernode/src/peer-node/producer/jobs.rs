@@ -1,6 +1,10 @@
 use rand::Rng;
 use serde::Serialize;
-use std::{collections::HashMap, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use tokio::sync::{Mutex, RwLock};
 
 type AsyncJob = Arc<Mutex<Job>>;
@@ -44,7 +48,6 @@ pub struct JobInfo {
     accumulatedCost: u64,
     projectedCost: u64,
     eta: u64,
-
 }
 #[derive(Clone)]
 pub struct HistoryEntry {
@@ -59,7 +62,6 @@ pub fn current_time_secs() -> u64 {
         .expect("Time went backwards");
     since_the_epoch.as_secs()
 }
-
 
 impl Jobs {
     pub fn new() -> Self {
@@ -147,7 +149,6 @@ impl Jobs {
 
         jobs_list
     }
-
 
     pub async fn finish_job(&self, job_id: &str) {
         let mut jobs = self.jobs.write().await;

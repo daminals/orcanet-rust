@@ -185,11 +185,12 @@ async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> i
     let job_id = config
         .get_jobs_state()
         .add_job(
-            file_hash.clone(), 
-            file_size, 
+            file_hash.clone(),
+            file_size,
             file_name,
             price.clone(),
-            peer_id.clone())
+            peer_id.clone(),
+        )
         .await;
 
     Response::builder()
@@ -210,7 +211,6 @@ async fn get_job_list(State(state): State<ServerState>) -> impl IntoResponse {
         .body(Body::from(format!("{{\"jobs\": \"{:?}\"}}", str_list)))
         .unwrap()
 }
-
 
 // Get Job - Adds a job to the producer's job queue
 // returns a list of jobs
