@@ -4,12 +4,7 @@ pub mod producer;
 pub mod store;
 
 use axum::{
-    body::Body,
-    extract::{Path, State},
-    http::{header, StatusCode},
-    response::{IntoResponse, Response},
-    routing::{get, post, put},
-    Json, Router,
+    body::Body, debug_handler, extract::{Path, State}, http::{header, StatusCode}, response::{IntoResponse, Response}, routing::{get, post, put}, Json, Router
 };
 use serde::Deserialize;
 use std::sync::Arc;
@@ -118,10 +113,26 @@ async fn get_file_info(
         .unwrap()
 }
 
+#[derive(Deserialize)]
+struct UploadFile {
+    filePath: String,
+    price: i64,
+}
 // UploadFile - To upload a file. This endpoint should accept a file (likely in Base64) and handle the storage and processing of the file on the server. Returns the file hash.
-// async fn upload_file(Json(file): Json<producer::files::File>) -> impl IntoResponse {
-// TODO: Implement this function-- we still do not know how to handle file uploads
-// }
+// For Now, upload a file path?
+async fn upload_file(
+    State(state): State<ServerState>,
+    Json(file): Json<UploadFile>,
+) -> impl IntoResponse {
+    let mut config = state.config.lock().await;
+    
+    let hash = config.add_file(file.filePath, file.price);
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from(format!("{{\"hash\": \"{}\"}}", hash)))
+        .unwrap()
+}
 
 // DeleteFile - Deletes a file from the configurations
 async fn delete_file(
@@ -207,9 +218,10 @@ async fn main() {
 
     let app = Router::new()
         //.route("/file/:hash", get(get_file))
+        .route("/upload", post(upload_file))
         .route("/file/:hash/info", get(get_file_info))
         .route("/file/:hash", post(delete_file))
-        .route("/add-bob", put(add_job))
+        .route("/add-job", put(add_job))
         .route("/job-list", get(get_job_list))
         .with_state(state);
 
