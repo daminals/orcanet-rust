@@ -257,7 +257,7 @@ impl Jobs {
 
         let mut job = job.lock().await;
 
-        if job.status == "completed" {
+        if let JobStatus::Completed = job.status {
             return false;
         }
 
