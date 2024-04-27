@@ -122,7 +122,10 @@ impl Configurations {
         let chunk_metadata = producer::files::generate_chunk_metadata(&mut file)?;
         Ok(FileInfo {
             file_hash: self.get_hash(file_path.clone())?,
-            chunk_hashes: chunk_metadata.into_iter().map(|(hash, _size)| hash).collect(),
+            chunk_hashes: chunk_metadata
+                .into_iter()
+                .map(|(hash, _size)| hash)
+                .collect(),
             file_size: file.metadata()?.len() as i64,
             file_name: file_path,
         })
