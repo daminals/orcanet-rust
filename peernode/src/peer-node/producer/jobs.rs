@@ -36,6 +36,7 @@ pub struct Job {
     projected_cost: u64,
     eta: u64, // seconds
     pub peer_id: String,
+    pub encoded_producer: String, // User struct serialized through encode::encode_user
 }
 
 #[derive(Debug)]
@@ -65,8 +66,8 @@ pub async fn start(job: AsyncJob, token: String) {
     if let JobStatus::Paused(next_chunk) = lock.status {
         let job = job.clone();
         dbg!(&lock);
-        let producer = lock.peer_id.clone();
-        let producer_user = match encode::decode_user(producer.clone()) {
+        let encoded_producer = lock.encoded_producer.clone();
+        let producer_user = match encode::decode_user(encoded_producer) {
             Ok(user) => user,
             Err(e) => {
                 eprintln!("Failed to decode producer: {}", e);
@@ -142,6 +143,7 @@ pub struct JobInfo {
     eta: u64,
 }
 #[derive(Clone, Serialize)]
+#[allow(non_snake_case)]
 pub struct HistoryEntry {
     fileName: String,
     timeCompleted: u64, // unix time in seconds
@@ -170,6 +172,7 @@ impl Jobs {
         file_name: String,
         price: i64,
         peer_id: String,
+        encoded_producer: String,
     ) -> String {
         // generate a random job id
         let job_id = rand::thread_rng().gen::<u64>().to_string();
@@ -189,6 +192,7 @@ impl Jobs {
             projected_cost: file_size * price as u64,
             eta: 0, // TODO, have correct eta
             peer_id: peer_id.clone(),
+            encoded_producer,
         };
         let async_job = Arc::new(Mutex::new(job));
         jobs.insert(job_id.clone(), async_job.clone());

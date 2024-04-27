@@ -173,7 +173,7 @@ impl Market {
         file_holders.holders.push((user, expiration));
         match self
             .dht_client
-            .set_holders(&file_info.file_hash, file_holders)
+            .set_holders(file_info.hash().as_str(), file_holders)
             .await
         {
             Ok(_) => {}

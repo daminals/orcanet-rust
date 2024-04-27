@@ -32,18 +32,6 @@ pub fn hash_file(file: &mut File) -> Result<String> {
     Ok(hash)
 }
 
-pub fn hash_fileinfo(info: &FileInfo) -> String {
-    let mut sha256 = Sha256::new();
-    let mut input = info.file_hash.clone();
-    for chunk_hash in &info.chunk_hashes {
-        input += chunk_hash;
-    }
-    input += info.file_size.to_string().as_str();
-    input += info.file_name.as_str();
-    sha256.update(input);
-    format!("{:x}", sha256.finalize())
-}
-
 pub fn generate_chunk_metadata(file: &mut File) -> Result<Vec<(String, u64)>> {
     let mut chunk_metadata = vec![];
 

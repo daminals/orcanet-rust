@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use axum::{
     body::Body,
     debug_handler,
@@ -9,7 +10,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{consumer, ServerState};
+use crate::{consumer, producer, ServerState};
 
 #[derive(Deserialize, Debug)]
 struct FileParams {
@@ -177,6 +178,26 @@ async fn upload_file(
     let price = 416;
 
     let hash = config.add_file(file.filePath, price);
+
+    // insanely inefficient but idc
+    let prices = config.get_prices();
+    let file_infos = config.get_file_infos();
+    let port = config.get_port();
+    let market_client = match config.get_market_client().await {
+        Ok(market_client) => market_client,
+        Err(_) => return StatusCode::SERVICE_UNAVAILABLE.into_response(),
+    };
+
+    if let Err(_) = producer::register_files(
+        prices,
+        file_infos,
+        market_client,
+        port,
+        None,
+    ).await {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    
 
     Response::builder()
         .status(StatusCode::OK)

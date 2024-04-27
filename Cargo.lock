@@ -2936,6 +2936,7 @@ version = "0.1.0"
 dependencies = [
  "prost",
  "serde",
+ "sha2",
  "tonic",
  "tonic-build",
 ]

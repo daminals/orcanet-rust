@@ -25,8 +25,8 @@ impl DhtEntry for FileHolders {
         }
         */
 
-        if key_str != new_values.file_info.file_hash {
-            println!("File hash does not match key");
+        if key_str != new_values.file_info.hash() {
+            println!("File info hash does not match key");
             return cur;
         }
         if cur.file_info != new_values.file_info {
