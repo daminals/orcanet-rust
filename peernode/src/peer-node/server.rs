@@ -20,7 +20,11 @@ pub struct ServerState {
 // Main function to setup and run the server
 #[tokio::main]
 async fn main() {
-    let config = store::Configurations::new().await;
+    let mut config = store::Configurations::new().await;
+
+    // Run market client if it was previously configured
+    let _ = config.get_market_client().await;
+
     let state = ServerState {
         config: Arc::new(Mutex::new(config)),
     };
