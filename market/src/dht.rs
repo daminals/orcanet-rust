@@ -461,7 +461,7 @@ impl DhtClient {
     pub async fn set_holders(&self, key: &str, requests: FileHolders) -> Result<()> {
         self.set::<ProvidedFiles>(
             "all_files",
-            ProvidedFiles(HashSet::from([requests.file_info.file_hash.clone()])),
+            ProvidedFiles(HashSet::from([requests.file_info.hash()])),
         )
         .await?;
         self.set::<FileHolders>(key, requests).await

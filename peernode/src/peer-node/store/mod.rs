@@ -174,12 +174,12 @@ impl Configurations {
 
     pub fn get_token(&mut self, producer_id: String) -> String {
         match self.props.tokens.get(&producer_id).cloned() {
-            Some(token) => token,
+            Some(token) => dbg!(token),
             None => {
                 let token = "token".to_string();
                 self.set_token(producer_id, token.clone());
                 self.write();
-                token
+                dbg!(token)
             }
         }
     }
@@ -205,7 +205,7 @@ impl Configurations {
     }
 
     pub fn set_private_key(&mut self, private_key: Option<String>) {
-        self.props.private_key = private_key
+        self.props.private_key = private_key;
         self.write();
     }
 

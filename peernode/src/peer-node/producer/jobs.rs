@@ -79,7 +79,7 @@ pub async fn start(job: AsyncJob, token: String) {
             let mut lock = job.lock().await;
             let file_hash = lock.file_hash.clone();
             let mut chunk_num = next_chunk;
-            let mut return_token = String::from(token);
+            let mut return_token = token;
             loop {
                 drop(lock);
                 match get_file_chunk(
@@ -107,13 +107,14 @@ pub async fn start(job: AsyncJob, token: String) {
                     Err(e) => {
                         eprintln!("Failed to download chunk {}: {}", chunk_num, e);
                         lock = job.lock().await;
-                        lock.status = JobStatus::Completed;
+                        lock.status = JobStatus::Failed;
                         return;
                     }
                 }
                 lock = job.lock().await;
                 if let JobStatus::Stop = lock.status {
                     lock.status = JobStatus::Paused(chunk_num);
+                    return;
                 }
             }
         }));

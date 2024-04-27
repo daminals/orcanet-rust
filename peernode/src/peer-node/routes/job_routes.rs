@@ -26,27 +26,14 @@ async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> i
     let file_hash = job.fileHash;
     let peer_id = job.peerId;
 
-    let file_name = match config.get_file_names().get(&file_hash) {
-        Some(file_name) => file_name.clone(),
-        None => {
-            return (StatusCode::NOT_FOUND, "File not found").into_response();
-        }
-    };
-    let price = match config.get_prices().get(&file_hash) {
-        Some(price) => price.clone(),
-        None => {
-            return (StatusCode::NOT_FOUND, "File not found").into_response();
-        }
-    };
-    let file_size = config.get_file_size(file_name.clone());
-
+    let file_info;
     let user = match config.get_market_client().await {
         Ok(market) => {
             match market.check_holders(file_hash.clone()).await {
                 Ok(Some(res)) => {
-                    dbg!(&res);
+                    file_info = res.file_info.unwrap();
                     res.holders.into_iter().filter(|user| user.id == peer_id).next()
-                },
+                }
                 _ => return (StatusCode::SERVICE_UNAVAILABLE, "Could not check holders").into_response(),
             }
         }
@@ -56,17 +43,16 @@ async fn add_job(State(state): State<ServerState>, Json(job): Json<AddJob>) -> i
         Some(user) => user,
         None => return (StatusCode::NOT_FOUND, "Peer is not providing file").into_response(),
     };
-    dbg!(&user);
     let encoded_producer = encode::encode_user(&user);
     println!("Encoded producer: {encoded_producer}");
     println!("id: {peer_id}");
     let job_id = config
         .get_jobs_state()
         .add_job(
-            file_hash.clone(),
-            file_size,
-            file_name,
-            price.clone(),
+            file_info.file_hash,
+            file_info.file_size as u64,
+            file_info.file_name,
+            user.price,
             peer_id.clone(),
             encoded_producer,
         )
@@ -176,7 +162,7 @@ async fn start_jobs(
         let mut config = state.config.lock().await;
         match config.get_jobs_state().get_job(&job_id).await {
             Some(job) => {
-                let token = config.get_token(job.lock().await.peer_id.clone());
+                let token = config.get_token(job.lock().await.encoded_producer.clone());
                 producer::jobs::start(job, token).await;
             }
             None => return (StatusCode::NOT_FOUND, "Job not found").into_response(),

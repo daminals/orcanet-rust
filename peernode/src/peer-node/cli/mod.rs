@@ -294,7 +294,7 @@ pub async fn handle_arg_matches(
                         None => Err(anyhow!("No file hash provided"))?,
                     };
                     let producer = match get_matches.get_one::<String>("PRODUCER") {
-                        Some(producer) => producer.clone(),
+                        Some(producer) => dbg!(producer.clone()),
                         None => Err(anyhow!("No producer provided"))?,
                     };
                     let chunk_num = match get_matches.get_one::<u64>("CHUNK_NUM") {
