@@ -201,10 +201,12 @@ impl Configurations {
 
     pub fn set_listen_address(&mut self, listen_address: Option<Multiaddr>) {
         self.props.listen_addr = listen_address;
+        self.write();
     }
 
     pub fn set_private_key(&mut self, private_key: Option<String>) {
         self.props.private_key = private_key
+        self.write();
     }
 
     // add every file in the directory to the list
